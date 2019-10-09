@@ -44,74 +44,94 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 8, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data.probability;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
-
-import javax.swing.Icon;
+import java.util.stream.Collectors;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.DataValue;
-import org.knime.core.data.ExtensibleUtilityFactory;
-import org.knime.core.node.util.SharedIcons;
+import org.knime.core.data.MetaData;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
+import org.knime.core.node.config.ConfigWO;
+import org.knime.core.node.util.CheckUtils;
 
 /**
- * Special interface that is implemented by {@link DataCell DataCells} that represent probability distributions over
- * nominal values. These distributions share the properties that the probabilities are non-negative and sum up to 1.
+ * TODO figure out if we could just reuse NominalDistributionMetaData
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface NominalDistributionValue extends DataValue {
+public final class NominalDistributionColumnMetaData implements MetaData {
+
+    private static final String CFG_VALUES = "values";
+
+    private Set<DataCell> m_values;
 
     /**
-     * Returns the probability of {@link DataCell value} in this distribution. Note that unknown values (i.e. values for
-     * which {@link NominalDistributionValue#isKnown(DataCell)} returns false) will not result in a failure but instead
-     * return a probability of 0.
-     *
-     * @param value {@link DataCell} to retrieve the probability for
-     * @return the probability of {@link DataCell value} in this distribution
+     * Framework constructor.
+     * @noreference This constructor is not intended to be referenced by clients.
      */
-    double getProbability(final DataCell value);
-
-    /**
-     * @param value the {@link DataCell} to check
-     * @return true if {@link DataCell value} is known to this distribution
-     */
-    boolean isKnown(final DataCell value);
-
-    /**
-     * @return the set of values this distribution knows
-     */
-    Set<DataCell> getKnownValues();
-
-    /** Implementations of the meta information of this value class. */
-    class NominalDistributionUtilityFactory extends ExtensibleUtilityFactory {
-        /** Singleton icon to be used to display this cell type. */
-        private static final Icon ICON = SharedIcons.TYPE_PROBABILITY_DISTRIBUTION.get();
-
-        /** Only subclasses are allowed to instantiate this class. */
-        protected NominalDistributionUtilityFactory() {
-            super(NominalDistributionValue.class);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public Icon getIcon() {
-            return ICON;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String getName() {
-            return "Nominal Probability Distribution";
-        }
+    public NominalDistributionColumnMetaData() {
 
     }
+
+    public NominalDistributionColumnMetaData(final DataCell[] values) {
+        m_values = toLinkedHashSet(values);
+    }
+
+    private NominalDistributionColumnMetaData(final LinkedHashSet<DataCell> values) {
+        m_values = values;
+    }
+
+    private static LinkedHashSet<DataCell> toLinkedHashSet(final DataCell[] values) {
+        return Arrays.stream(values).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public Set<DataCell> getValues() {
+        return Collections.unmodifiableSet(m_values);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void load(final ConfigRO config) throws InvalidSettingsException {
+        m_values = toLinkedHashSet(config.getDataCellArray(CFG_VALUES));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void save(final ConfigWO config) {
+        config.addDataCellArray(CFG_VALUES, m_values.toArray(new DataCell[0]));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MetaData merge(final MetaData other) {
+        // TODO informative error message
+        CheckUtils.checkArgument(other instanceof NominalDistributionColumnMetaData, "Incompatible meta data type %s",
+            other.getClass());
+        final NominalDistributionColumnMetaData otherMeta = (NominalDistributionColumnMetaData)other;
+        if (other == this) {
+            return this;
+        } else if (m_values.equals(otherMeta.m_values)) {
+            return this;
+        } else {
+            final LinkedHashSet<DataCell> mergedValues = new LinkedHashSet<>();
+            mergedValues.addAll(m_values);
+            mergedValues.addAll(otherMeta.m_values);
+            return new NominalDistributionColumnMetaData(mergedValues);
+        }
+    }
+
 }

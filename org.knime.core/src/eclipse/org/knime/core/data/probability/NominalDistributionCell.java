@@ -61,6 +61,7 @@ import org.knime.core.data.DataCell;
 import org.knime.core.data.DataCellDataInput;
 import org.knime.core.data.DataCellDataOutput;
 import org.knime.core.data.DataCellSerializer;
+import org.knime.core.data.DataType;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.filestore.FileStoreCell;
 import org.knime.core.node.util.CheckUtils;
@@ -74,9 +75,11 @@ import org.knime.core.node.util.CheckUtils;
  */
 public class NominalDistributionCell extends FileStoreCell implements NominalDistributionValue {
 
+    static final DataType TYPE = DataType.getType(NominalDistributionCell.class);
+
     private static final long serialVersionUID = 1L;
 
-    private NominalDistributionMetaData m_metaData;
+    private transient NominalDistributionMetaData m_metaData;
 
     private double[] m_probabilities;
 
@@ -109,8 +112,7 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
     }
 
     private static boolean isNotWrittenYet(final File file) {
-        // TODO how is this done correctly?
-        return file.length() == 0;
+        return !file.exists();
     }
 
     private File getFile() {

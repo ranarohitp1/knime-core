@@ -48,8 +48,13 @@
  */
 package org.knime.core.data.probability;
 
+import java.io.IOException;
+import java.util.UUID;
+
 import org.knime.core.data.DataCell;
+import org.knime.core.data.DataType;
 import org.knime.core.data.filestore.FileStore;
+import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.util.CheckUtils;
 
 /**
@@ -61,6 +66,8 @@ import org.knime.core.node.util.CheckUtils;
  */
 public class NominalDistributionCellFactory {
 
+    public static final DataType TYPE = NominalDistributionCell.TYPE;
+
     private final NominalDistributionMetaData m_metaData;
 
     private final FileStore m_fileStore;
@@ -69,11 +76,16 @@ public class NominalDistributionCellFactory {
      * Constructs a {@link NominalDistributionCellFactory} for the creation of {@link NominalDistributionCell
      * NominalDistributionCells}.
      *
-     * @param fileStore the {@link FileStore} shared by all cells that are created by this factory
+     * @param exec used to create the {@link FileStore} shared by the cells created by this factory
      * @param values the values the distribution is defined over
      */
-    public NominalDistributionCellFactory(final FileStore fileStore, final DataCell[] values) {
-        m_fileStore = fileStore;
+    public NominalDistributionCellFactory(final ExecutionContext exec, final DataCell[] values) {
+        try {
+            m_fileStore = exec.createFileStore(UUID.randomUUID().toString());
+        } catch (IOException ex) {
+            // TODO is this correct?
+            throw new IllegalStateException(ex);
+        }
         m_metaData = new NominalDistributionMetaData(values);
     }
 
@@ -84,12 +96,21 @@ public class NominalDistributionCellFactory {
      * @throws IllegalArgumentException if <b>probabilities</b> does not have the same number of elements as there are
      *             values in the meta data
      */
-    public NominalDistributionCell createCell(final double[] probabilities) {
+    public NominalDistributionCell createCell(final double[] probabilities, final double epsilon) {
+        // TODO implement epsilon functionality
         CheckUtils.checkNotNull(probabilities);
         CheckUtils.checkArgument(probabilities.length == m_metaData.size(),
             "The number of elements in probabilities (%s) must match the number of values in the meta data (%s).",
             probabilities.length, m_metaData.size());
         return new NominalDistributionCell(m_metaData, m_fileStore, probabilities.clone());
+    }
+
+    public NominalDistributionCell createCell(final DataCell value) {
+        final int idx = m_metaData.getIndex(value);
+        CheckUtils.checkArgument(idx != -1, "Unknown value '%s'.", value);
+        final double[] probs = new double[m_metaData.size()];
+        probs[idx] = 1.0;
+        return new NominalDistributionCell(m_metaData, m_fileStore, probs);
     }
 
 }

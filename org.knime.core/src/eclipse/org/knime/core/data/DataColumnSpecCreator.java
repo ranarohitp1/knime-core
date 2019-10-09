@@ -116,6 +116,11 @@ public final class DataColumnSpecCreator {
     private String[] m_elementNames;
 
     /**
+     * TODO
+     */
+    private MetaData m_metaData;
+
+    /**
      * Counter that is used when the setName() method is called with an
      * empty string. It will create an artificial name with a guaranteed
      * unique index.
@@ -164,6 +169,7 @@ public final class DataColumnSpecCreator {
         m_colorHandler = cspec.getColorHandler();
         // property filter
         m_filterHandler = cspec.getFilterHandler().orElse(null);
+        m_metaData = cspec.getMetaData();
     }
 
     /**
@@ -234,6 +240,9 @@ public final class DataColumnSpecCreator {
         } else {
             newUpper = myUpper;
         }
+
+        // TODO verify
+        m_metaData = m_metaData.merge(cspec2.getMetaData());
 
 
         if (hasDomainChanged) {
@@ -415,6 +424,14 @@ public final class DataColumnSpecCreator {
     }
 
     /**
+     * TODO
+     * @since 4.1
+     */
+    public void setMetaData(final MetaData metaData) {
+        m_metaData = metaData;
+    }
+
+    /**
      * Removes all handlers from this creator which are then set to
      * <code>null</code> for the next call of <code>#createSpec()</code>.
      */
@@ -434,7 +451,8 @@ public final class DataColumnSpecCreator {
     public DataColumnSpec createSpec() {
         String[] elNames =
             m_elementNames == null ? new String[0] : m_elementNames;
+        final MetaData metaData = m_metaData == null ? new NullMetaData() : m_metaData;
         return new DataColumnSpec(m_name, elNames, m_type, m_domain,
-                m_properties, m_sizeHandler, m_colorHandler, m_shapeHandler, m_filterHandler);
+                m_properties, m_sizeHandler, m_colorHandler, m_shapeHandler, m_filterHandler, metaData);
     }
 }

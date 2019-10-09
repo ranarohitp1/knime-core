@@ -59,6 +59,7 @@ import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataValueComparator;
+import org.knime.core.data.MetaData;
 import org.knime.core.data.RowIterator;
 import org.knime.core.data.append.AppendedRowsIterator.PairSupplier;
 import org.knime.core.node.ExecutionMonitor;
@@ -231,6 +232,8 @@ public class AppendedRowsTable implements DataTable {
         LinkedHashMap<String, DataColumnDomain> domainSet =
             new LinkedHashMap<String, DataColumnDomain>();
 
+        final LinkedHashMap<String, MetaData> metaDataSet = new LinkedHashMap<>();
+
         // create final data table spec
         for (int i = 0; i < tableSpecs.length; i++) {
             DataTableSpec cur = tableSpecs[i];
@@ -243,6 +246,7 @@ public class AppendedRowsTable implements DataTable {
                 }
                 DataType colType = colSpec.getType();
                 DataColumnDomain colDomain = colSpec.getDomain();
+                final MetaData metaData = colSpec.getMetaData();
 
                 // duplicates are welcome - but only if they match the type
                 if (typeSet.containsKey(colName)) {
@@ -265,9 +269,12 @@ public class AppendedRowsTable implements DataTable {
                     DataColumnDomain newDomain = merge(oldDomain, colDomain,
                             type.getComparator());
                     domainSet.put(colName, newDomain);
+                    final MetaData oldMetaData = metaDataSet.get(colName);
+                    metaDataSet.put(colName, oldMetaData.merge(metaData));
                 } else { // doesn't contain the key
                     typeSet.put(colName, colType);
                     domainSet.put(colName, colDomain);
+                    metaDataSet.put(colName, metaData);
                 }
             } // for all columns in the current table spec
         } // for all tables

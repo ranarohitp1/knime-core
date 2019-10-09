@@ -524,6 +524,13 @@
                serializerClass="org.knime.core.data.probability.ProbabilityDistributionCell$ProbabilityDistributionSerializer">
          </serializer>
       </DataType>
+      <DataType
+            cellClass="org.knime.core.data.probability.NominalDistributionCell">
+         <serializer
+               cellClass="org.knime.core.data.probability.NominalDistributionCell"
+               serializerClass="org.knime.core.data.probability.NominalDistributionCell$NominalDistributionSerializer">
+         </serializer>
+      </DataType>
    </extension>
    <extension
          point="org.knime.core.PortType">
