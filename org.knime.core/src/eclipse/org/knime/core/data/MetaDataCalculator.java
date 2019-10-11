@@ -44,36 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 11, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
-import org.knime.core.node.config.ConfigWO;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.knime.core.data.DataValue.UtilityFactory;
 
 /**
- *
  * TODO
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @since 4.1
  */
-public interface MetaData {
+final class MetaDataCalculator {
 
-    void load(final ConfigRO config) throws InvalidSettingsException;
+    private final List<DataValueMetaDataCreator<?>> m_metaDataCreators;
 
-    void save(final ConfigWO config);
+    MetaDataCalculator(final DataType type) {
+        m_metaDataCreators = type.getValueClasses().stream().map(DataType::getUtilityFor)
+            .filter(UtilityFactory::hasMetaData).map(UtilityFactory::getMetaDataCreator).collect(Collectors.toList());
+    }
 
-    /**
-     * Creates a merged {@link MetaData} object that contains both the information of {@link MetaData this} as well as the
-     * information of {@link MetaData other}.
-     *
-     * TODO
-     *
-     * @param other the MetaData to merge with (typically of the same class)
-     * @return the merged MetaData
-     * @throws IllegalArgumentException if this MetaData is incompatible with <b>other</b>
-     */
-    MetaData merge(MetaData other);
+    MetaDataCalculator(final MetaDataCalculator toCopy) {
+        m_metaDataCreators =
+            toCopy.m_metaDataCreators.stream().map(DataValueMetaDataCreator::copy).collect(Collectors.toList());
+    }
+
+    void update(final DataCell cell) {
+        m_metaDataCreators.forEach(c -> c.update(cell));
+    }
+
+    List<DataValueMetaData<?>> createMetaData() {
+        return m_metaDataCreators.stream().map(DataValueMetaDataCreator::create).collect(Collectors.toList());
+    }
+
+    void merge(final MetaDataCalculator other) {
+        final Iterator<DataValueMetaDataCreator<?>> otherCreators = other.m_metaDataCreators.iterator();
+        for (DataValueMetaDataCreator<?> creator : m_metaDataCreators) {
+            assert otherCreators.hasNext();
+            final DataValueMetaDataCreator<?> otherCreator = otherCreators.next();
+            assert creator.getClass().equals(otherCreator.getClass());
+            creator.merge(otherCreator);
+        }
+    }
+
 }

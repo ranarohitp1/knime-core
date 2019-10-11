@@ -44,36 +44,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 11, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
-import org.knime.core.node.config.ConfigWO;
-
 /**
- *
- * TODO
+ * This interface describes {@link MetaData} that belongs to a certain type of {@link DataValue}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @param <T> the type of {@link DataValue} this {@link MetaData} belongs to
  * @since 4.1
  */
-public interface MetaData {
+public interface DataValueMetaData <T extends DataValue> extends MetaData {
 
-    void load(final ConfigRO config) throws InvalidSettingsException;
+    Class<T> getValueType();
 
-    void save(final ConfigWO config);
-
-    /**
-     * Creates a merged {@link MetaData} object that contains both the information of {@link MetaData this} as well as the
-     * information of {@link MetaData other}.
-     *
-     * TODO
-     *
-     * @param other the MetaData to merge with (typically of the same class)
-     * @return the merged MetaData
-     * @throws IllegalArgumentException if this MetaData is incompatible with <b>other</b>
-     */
-    MetaData merge(MetaData other);
+    @Override
+    DataValueMetaData<T> merge(MetaData other);
 }

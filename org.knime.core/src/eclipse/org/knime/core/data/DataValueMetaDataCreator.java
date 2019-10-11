@@ -44,36 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
-import org.knime.core.node.config.ConfigWO;
-
 /**
- *
  * TODO
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @param <T> the type of {@link DataValue} the created {@link DataValueMetaData} refers to
  * @since 4.1
  */
-public interface MetaData {
-
-    void load(final ConfigRO config) throws InvalidSettingsException;
-
-    void save(final ConfigWO config);
+public interface DataValueMetaDataCreator<T extends DataValue> {
 
     /**
-     * Creates a merged {@link MetaData} object that contains both the information of {@link MetaData this} as well as the
-     * information of {@link MetaData other}.
+     * Updates the meta data according to the contents of cell.</br>
+     * Missing values and incompatible cell types (e.g. in a transposed table) must not cause
+     * an exception and should simply be ignored.
      *
-     * TODO
-     *
-     * @param other the MetaData to merge with (typically of the same class)
-     * @return the merged MetaData
-     * @throws IllegalArgumentException if this MetaData is incompatible with <b>other</b>
+     * @param cell whose information should (if possible) be included in the meta data
      */
-    MetaData merge(MetaData other);
+    void update(final DataCell cell);
+
+    /**
+     * Creates the {@link DataValueMetaData} corresponding to the current state of this creator.</br>
+     * It must be possible to call this method multiple times even if the creator is still updated and
+     * {@link DataValueMetaData metaData objects} created in different calls must be independent from each other
+     * i.e. they may not share any mutable objects.
+     *
+     * @return the {@link DataValueMetaData} containing the meta data at the current state of this creator
+     */
+    DataValueMetaData<T> create();
+
+    /**
+     * Creates a deep copy of this creator i.e. calling update on the copied creator
+     * has no effect on this creator.
+     *
+     * @return a deep copy of this creator
+     */
+    DataValueMetaDataCreator<T> copy();
+
+    /**
+     * Merges two {@link DataValueMetaDataCreator creators} by including the data
+     * from <b>other</b> into this creator.
+     *
+     * @param other the creator to merge into this
+     */
+    void merge(final DataValueMetaDataCreator<?> other);
 }

@@ -49,6 +49,7 @@
 package org.knime.core.data.probability;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -67,7 +68,7 @@ import org.knime.core.node.util.CheckUtils;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public final class NominalDistributionColumnMetaData implements MetaData {
+public final class DefaultNominalDistributionValueMetaData implements NominalDistributionValueMetaData {
 
     private static final String CFG_VALUES = "values";
 
@@ -77,15 +78,19 @@ public final class NominalDistributionColumnMetaData implements MetaData {
      * Framework constructor.
      * @noreference This constructor is not intended to be referenced by clients.
      */
-    public NominalDistributionColumnMetaData() {
+    public DefaultNominalDistributionValueMetaData() {
 
     }
 
-    public NominalDistributionColumnMetaData(final DataCell[] values) {
+    public DefaultNominalDistributionValueMetaData(final DataCell[] values) {
         m_values = toLinkedHashSet(values);
     }
 
-    private NominalDistributionColumnMetaData(final LinkedHashSet<DataCell> values) {
+    DefaultNominalDistributionValueMetaData(final Collection<DataCell> values) {
+        m_values = new LinkedHashSet<>(values);
+    }
+
+    private DefaultNominalDistributionValueMetaData(final LinkedHashSet<DataCell> values) {
         m_values = values;
     }
 
@@ -93,6 +98,7 @@ public final class NominalDistributionColumnMetaData implements MetaData {
         return Arrays.stream(values).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+    @Override
     public Set<DataCell> getValues() {
         return Collections.unmodifiableSet(m_values);
     }
@@ -105,33 +111,35 @@ public final class NominalDistributionColumnMetaData implements MetaData {
         m_values = toLinkedHashSet(config.getDataCellArray(CFG_VALUES));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void save(final ConfigWO config) {
         config.addDataCellArray(CFG_VALUES, m_values.toArray(new DataCell[0]));
+    }
+
+    @Override
+    public NominalDistributionValueMetaData merge(final MetaData other) {
+        // TODO informative error message
+        CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaData, "Incompatible meta data type %s",
+            other.getClass());
+        final NominalDistributionValueMetaData otherMeta = (NominalDistributionValueMetaData)other;
+        if (other == this) {
+            return this;
+        } else if (m_values.equals(otherMeta.getValues())) {
+            return this;
+        } else {
+            final LinkedHashSet<DataCell> mergedValues = new LinkedHashSet<>();
+            mergedValues.addAll(m_values);
+            mergedValues.addAll(otherMeta.getValues());
+            return new DefaultNominalDistributionValueMetaData(mergedValues);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public MetaData merge(final MetaData other) {
-        // TODO informative error message
-        CheckUtils.checkArgument(other instanceof NominalDistributionColumnMetaData, "Incompatible meta data type %s",
-            other.getClass());
-        final NominalDistributionColumnMetaData otherMeta = (NominalDistributionColumnMetaData)other;
-        if (other == this) {
-            return this;
-        } else if (m_values.equals(otherMeta.m_values)) {
-            return this;
-        } else {
-            final LinkedHashSet<DataCell> mergedValues = new LinkedHashSet<>();
-            mergedValues.addAll(m_values);
-            mergedValues.addAll(otherMeta.m_values);
-            return new NominalDistributionColumnMetaData(mergedValues);
-        }
+    public Class<NominalDistributionValue> getValueType() {
+        return NominalDistributionValue.class;
     }
 
 }

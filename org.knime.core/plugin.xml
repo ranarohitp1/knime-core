@@ -262,6 +262,13 @@
                rendererFactoryClass="org.knime.core.data.probability.renderer.ProbabilityDistributionClassNameRenderer$ClassNameRendererFactory"
                suggestAsDefault="true">
          </renderer>
+      </dataValue>
+      <dataValue
+            valueClass="org.knime.core.data.probability.NominalDistributionValue">
+         <renderer
+               rendererFactoryClass="org.knime.core.data.probability.NominalDistributionValueRenderer$DefaultRendererFactory"
+               suggestAsDefault="true">
+         </renderer>
       </dataValue>      
    </extension>
    <extension

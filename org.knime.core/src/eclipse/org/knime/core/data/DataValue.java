@@ -173,5 +173,23 @@ public interface DataValue {
                 final Class<?> className, final String path) {
             return ViewUtils.loadIcon(className, path);
         }
+
+        /**
+         * TODO
+         *
+         * @return
+         * @since 4.1
+         */
+        public boolean hasMetaData() {
+            return false;
+        }
+
+        /**
+         * TODO
+         * @since 4.1
+         */
+        public DataValueMetaDataCreator<?> getMetaDataCreator() {
+            throw new IllegalStateException("This data value has no meta data.");
+        }
     }
 }

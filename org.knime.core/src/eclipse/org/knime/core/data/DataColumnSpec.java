@@ -44,7 +44,6 @@
  */
 package org.knime.core.data;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -105,7 +104,7 @@ public final class DataColumnSpec {
     /** Holds the FilterHandler if one was set or null. */
     private final FilterHandler m_filterHandler;
 
-    private final MetaData m_metaData;
+    private final MetaDataManager m_metaDataManager;
 
     /** Config key for the column name. */
     private static final String CFG_COLUMN_NAME = "column_name";
@@ -136,8 +135,6 @@ public final class DataColumnSpec {
 
     private static final String CFG_META_DATA = "meta_data";
 
-    private static final String CFG_META_DATA_CLASS = "meta_data_class";
-
     /**
      * Constructor taking all properties of this column spec as arguments. It
      * creates a read-only <code>DataColumnSpec</code> and should only be
@@ -154,10 +151,9 @@ public final class DataColumnSpec {
      * @param shapeHdl the <code>ShapeHandler</code> or <code>null</code>
      * @throws IllegalArgumentException if either column name, type, domain, or properties are <code>null</code>
      */
-    DataColumnSpec(final String name, final String[] elNames,
-            final DataType type, final DataColumnDomain domain,
-            final DataColumnProperties props, final SizeHandler sizeHdl,
-            final ColorHandler colorHdl, final ShapeHandler shapeHdl, final FilterHandler filterHdl, final MetaData metaData) {
+    DataColumnSpec(final String name, final String[] elNames, final DataType type, final DataColumnDomain domain,
+        final DataColumnProperties props, final SizeHandler sizeHdl, final ColorHandler colorHdl,
+        final ShapeHandler shapeHdl, final FilterHandler filterHdl, final MetaDataManager metaDataManager) {
         final String nullError = "Do not init DataColumnSpec with null arguments!";
         List<String> elNamesAsList = Collections.unmodifiableList(
             Arrays.asList(CheckUtils.checkArgumentNotNull(elNames, nullError)));
@@ -172,7 +168,7 @@ public final class DataColumnSpec {
         m_colorHandler = colorHdl;
         m_shapeHandler = shapeHdl;
         m_filterHandler = filterHdl;
-        m_metaData = metaData;
+        m_metaDataManager = metaDataManager;
     }
 
     /**
@@ -275,13 +271,18 @@ public final class DataColumnSpec {
         return Optional.ofNullable(m_filterHandler);
     }
 
+
     /**
      * TODO
      *
      * @since 4.1
      */
-    public MetaData getMetaData() {
-        return m_metaData;
+    public <T extends DataValue> DataValueMetaData<T> getMetaData(final Class<T> dataValueClass) {
+        return m_metaDataManager.getMetaData(dataValueClass);
+    }
+
+    MetaDataManager getMetaDataManager() {
+        return m_metaDataManager;
     }
 
     /**
@@ -336,7 +337,7 @@ public final class DataColumnSpec {
                 && Objects.equals(m_sizeHandler, cspec.m_sizeHandler)
                 && Objects.equals(m_shapeHandler, cspec.m_shapeHandler)
                 && Objects.equals(m_filterHandler, cspec.m_filterHandler)
-                && Objects.equals(m_metaData, cspec.m_metaData);
+                && Objects.equals(m_metaDataManager, cspec.m_metaDataManager);
 
     }
 
@@ -387,10 +388,7 @@ public final class DataColumnSpec {
         if (m_filterHandler != null) {
             m_filterHandler.save(config.addConfig(CFG_FILTER));
         }
-        if (m_metaData != null) {
-            config.addString(CFG_META_DATA_CLASS, m_metaData.getClass().getName());
-            m_metaData.save(config.addConfig(CFG_META_DATA));
-        }
+        m_metaDataManager.save(config.addConfig(CFG_META_DATA));
     }
 
     /**
@@ -432,23 +430,11 @@ public final class DataColumnSpec {
         if (config.containsKey(CFG_FILTER)) {
             filter = FilterHandler.load(config.getConfig(CFG_FILTER));
         }
-        MetaData metaData = null;
-        if (config.containsKey(CFG_META_DATA_CLASS)) {
-            final String className = config.getString(CFG_META_DATA_CLASS);
-            try {
-                final Class<?> metaDataClass = Class.forName(className);
-                metaData = (MetaData)metaDataClass.getConstructor().newInstance();
-            } catch (ClassNotFoundException ex) {
-                throw new InvalidSettingsException(String.format("Unknown meta data class %s.", className), ex);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException
-                    | SecurityException ex) {
-                throw new InvalidSettingsException(
-                    String.format("Can't instantiate a meta data object of type %s.", className));
-            }
-            metaData.load(config.getConfig(CFG_META_DATA));
-
+        final MetaDataManager metaDataManager = new MetaDataManager();
+        if (config.containsKey(CFG_META_DATA)) {
+            metaDataManager.load(config);
         }
-        return new DataColumnSpec(name, elNames, type, domain, properties, size, color, shape, filter, metaData);
+        return new DataColumnSpec(name, elNames, type, domain, properties, size, color, shape, filter, metaDataManager);
     }
 
 } // DataColumnSpec

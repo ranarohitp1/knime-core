@@ -44,81 +44,80 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 8, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Aug 28, 2019 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data.probability;
 
 import java.util.Set;
-
-import javax.swing.Icon;
+import java.util.stream.Collectors;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.DataValue;
-import org.knime.core.data.ExtensibleUtilityFactory;
-import org.knime.core.node.util.SharedIcons;
+import org.knime.core.data.DataColumnSpec;
+import org.knime.core.data.MetaData;
+import org.knime.core.data.renderer.AbstractDataValueRendererFactory;
+import org.knime.core.data.renderer.DataValueRenderer;
+import org.knime.core.data.renderer.DefaultDataValueRenderer;
+import org.knime.core.node.util.CheckUtils;
 
 /**
- * Special interface that is implemented by {@link DataCell DataCells} that represent probability distributions over
- * nominal values. These distributions share the properties that the probabilities are non-negative and sum up to 1.
+ * Generic renderer for {@link NominalDistributionValue} which prints each probability separated by commas.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface NominalDistributionValue extends DataValue {
+public final class NominalDistributionValueRenderer extends DefaultDataValueRenderer {
+
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    private static final String DESCRIPTION_PROB_DISTR = "Nominal Probability Distribution";
+
+    private NominalDistributionValueRenderer(final DataColumnSpec colSpec) {
+        super(colSpec);
+    }
 
     /**
-     * Meta information on {@link NominalDistributionValue NominalDistributionValues}.
-     *
-     * @see DataValue#UTILITY
+     * @return "Probability Distribution" {@inheritDoc}
      */
-    UtilityFactory UTILITY = new NominalDistributionUtilityFactory();
+    @Override
+    public String getDescription() {
+        return DESCRIPTION_PROB_DISTR;
+    }
 
-    /**
-     * Returns the probability of {@link DataCell value} in this distribution. Note that unknown values (i.e. values for
-     * which {@link NominalDistributionValue#isKnown(DataCell)} returns false) will not result in a failure but instead
-     * return a probability of 0.
-     *
-     * @param value {@link DataCell} to retrieve the probability for
-     * @return the probability of {@link DataCell value} in this distribution
-     */
-    double getProbability(final DataCell value);
-
-    /**
-     * @param value the {@link DataCell} to check
-     * @return true if {@link DataCell value} is known to this distribution
-     */
-    boolean isKnown(final DataCell value);
-
-    /**
-     * @return the set of values this distribution knows
-     */
-    Set<DataCell> getKnownValues();
-
-    /** Implementations of the meta information of this value class. */
-    class NominalDistributionUtilityFactory extends ExtensibleUtilityFactory {
-        /** Singleton icon to be used to display this cell type. */
-        private static final Icon ICON = SharedIcons.TYPE_PROBABILITY_DISTRIBUTION.get();
-
-        /** Only subclasses are allowed to instantiate this class. */
-        protected NominalDistributionUtilityFactory() {
-            super(NominalDistributionValue.class);
+    @Override
+    protected void setValue(final Object value) {
+        if (value instanceof NominalDistributionValue) {
+            final NominalDistributionValueMetaData metaData = getMetaData();
+            final Set<DataCell> possibleValues = metaData.getValues();
+            NominalDistributionValue probDistrValue = (NominalDistributionValue)value;
+            String displayString = possibleValues.stream().mapToDouble(probDistrValue::getProbability)
+                .mapToObj(Double::toString).collect(Collectors.joining(", ", "[", "]"));
+            super.setValue(displayString);
+        } else {
+            super.setValue(value);
         }
+    }
 
-        /**
-         * {@inheritDoc}
-         */
+    private NominalDistributionValueMetaData getMetaData() {
+        final DataColumnSpec spec = getColSpec();
+        final MetaData metaData = spec.getMetaData(NominalDistributionValue.class);
+        CheckUtils.checkState(metaData instanceof NominalDistributionValueMetaData,
+            "The meta data of a NominalDistributionValue must be of type %s but was of type %s instead.",
+            NominalDistributionValueMetaData.class.getName(), metaData.getClass().getName());
+        return (NominalDistributionValueMetaData)metaData;
+    }
+
+    /** Renderer factory registered through extension point. */
+    public static final class DefaultRendererFactory extends AbstractDataValueRendererFactory {
+
         @Override
-        public Icon getIcon() {
-            return ICON;
+        public String getDescription() {
+            return DESCRIPTION_PROB_DISTR;
         }
 
-        /**
-         * {@inheritDoc}
-         */
         @Override
-        public String getName() {
-            return "Nominal Probability Distribution";
+        public DataValueRenderer createRenderer(final DataColumnSpec colSpec) {
+            return new NominalDistributionValueRenderer(colSpec);
         }
-
     }
 }

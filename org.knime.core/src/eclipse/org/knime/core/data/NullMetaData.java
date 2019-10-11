@@ -58,9 +58,11 @@ import org.knime.core.node.config.ConfigWO;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public final class NullMetaData implements MetaData {
-
-    // TODO figure out if we can turn this into a singleton (e.g. by having custom serializers or factories)
+public enum NullMetaData implements MetaData {
+    /**
+     * The singleton NullMetaData object.
+     */
+    INSTANCE;
 
     /**
      * {@inheritDoc}
@@ -84,7 +86,7 @@ public final class NullMetaData implements MetaData {
      */
     @Override
     public MetaData merge(final MetaData other) {
-        if (other instanceof NullMetaData) {
+        if (other == this) {
             return this;
         } else {
             return other.merge(this);

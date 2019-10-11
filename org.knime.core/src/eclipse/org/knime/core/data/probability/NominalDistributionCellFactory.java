@@ -66,6 +66,9 @@ import org.knime.core.node.util.CheckUtils;
  */
 public class NominalDistributionCellFactory {
 
+    /**
+     * The {@link DataType} of cells created by this factory.
+     */
     public static final DataType TYPE = NominalDistributionCell.TYPE;
 
     private final NominalDistributionMetaData m_metaData;
@@ -80,6 +83,7 @@ public class NominalDistributionCellFactory {
      * @param values the values the distribution is defined over
      */
     public NominalDistributionCellFactory(final ExecutionContext exec, final DataCell[] values) {
+        // TODO reject cells whose toString results in empty strings (otherwise the splitter might behave weirdly)
         try {
             m_fileStore = exec.createFileStore(UUID.randomUUID().toString());
         } catch (IOException ex) {

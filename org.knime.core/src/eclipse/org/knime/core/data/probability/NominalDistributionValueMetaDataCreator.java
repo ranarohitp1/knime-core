@@ -44,36 +44,75 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.core.data;
+package org.knime.core.data.probability;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
-import org.knime.core.node.config.ConfigWO;
+import java.util.LinkedHashSet;
+
+import org.knime.core.data.DataCell;
+import org.knime.core.data.DataValueMetaDataCreator;
+import org.knime.core.node.util.CheckUtils;
 
 /**
- *
  * TODO
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface MetaData {
+public final class NominalDistributionValueMetaDataCreator
+    implements DataValueMetaDataCreator<NominalDistributionValue> {
 
-    void load(final ConfigRO config) throws InvalidSettingsException;
+    private final LinkedHashSet<DataCell> m_values;
 
-    void save(final ConfigWO config);
+    private NominalDistributionValueMetaDataCreator() {
+        m_values = new LinkedHashSet<>();
+    }
+
+    private NominalDistributionValueMetaDataCreator(final LinkedHashSet<DataCell> values) {
+        m_values = new LinkedHashSet<>(values);
+    }
 
     /**
-     * Creates a merged {@link MetaData} object that contains both the information of {@link MetaData this} as well as the
-     * information of {@link MetaData other}.
-     *
-     * TODO
-     *
-     * @param other the MetaData to merge with (typically of the same class)
-     * @return the merged MetaData
-     * @throws IllegalArgumentException if this MetaData is incompatible with <b>other</b>
+     * {@inheritDoc}
      */
-    MetaData merge(MetaData other);
+    @Override
+    public void update(final DataCell cell) {
+        if (cell.isMissing()) {
+            return;
+        }
+        CheckUtils.checkArgument(cell instanceof NominalDistributionValue,
+            "The cell %s of type %s does not implement NominalDistributionValue.", cell, cell.getClass());
+        final NominalDistributionValue value = (NominalDistributionValue)cell;
+        m_values.addAll(value.getKnownValues());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NominalDistributionValueMetaData create() {
+        return new DefaultNominalDistributionValueMetaData(m_values);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DataValueMetaDataCreator<NominalDistributionValue> copy() {
+        return new NominalDistributionValueMetaDataCreator(m_values);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void merge(final DataValueMetaDataCreator<?> other) {
+        CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaDataCreator,
+            "Can only merge with NominalDistributionValueMetaDataCreator but received object of type %s.",
+            other.getClass().getName());
+        final NominalDistributionValueMetaDataCreator otherCreator = (NominalDistributionValueMetaDataCreator)other;
+        m_values.addAll(otherCreator.m_values);
+    }
+
 }

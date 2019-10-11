@@ -46,6 +46,7 @@
  */
 package org.knime.core.data;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -95,6 +96,8 @@ public class DataTableDomainCreator {
 
     private final DataValueComparator[] m_comparators;
 
+    private final MetaDataCalculator[] m_metaDataCalculators;
+
     /** The batch id. */
     private long m_batchId;
 
@@ -121,6 +124,7 @@ public class DataTableDomainCreator {
         m_domainValuesColumnSelection = domainValuesColumnSelection;
         m_domainMinMaxColumnSelection = domainMinMaxColumnSelection;
         m_maxPossibleValues = DataContainerSettings.getDefault().getMaxDomainValues();
+        m_metaDataCalculators = new MetaDataCalculator[inputSpec.getNumColumns()];
 
         int i = 0;
         for (DataColumnSpec colSpec : inputSpec) {
@@ -167,6 +171,8 @@ public class DataTableDomainCreator {
             if (m_maxs[i] != null) {
                 m_maxsMissing[i] = m_maxs[i].isMissing();
             }
+            // TODO do we always want to create the meta data? (At least for NominalDistribution we do)
+            m_metaDataCalculators[i] = new MetaDataCalculator(colSpec.getType());
             i++;
         }
     }
@@ -212,6 +218,7 @@ public class DataTableDomainCreator {
      */
     @SuppressWarnings("unchecked")
     public DataTableDomainCreator(final DataTableDomainCreator toCopy) {
+        // TODO how to handle meta data
         m_domainValuesColumnSelection = toCopy.m_domainValuesColumnSelection;
         m_domainMinMaxColumnSelection = toCopy.m_domainMinMaxColumnSelection;
         m_maxPossibleValues = toCopy.m_maxPossibleValues;
@@ -227,6 +234,8 @@ public class DataTableDomainCreator {
         }
         m_comparators = toCopy.m_comparators.clone();
         m_batchId = toCopy.m_batchId;
+        m_metaDataCalculators =
+            Arrays.stream(toCopy.m_metaDataCalculators).map(MetaDataCalculator::new).toArray(MetaDataCalculator[]::new);
     }
 
     /**
@@ -349,6 +358,7 @@ public class DataTableDomainCreator {
 
             DataColumnSpecCreator specCreator = new DataColumnSpecCreator(original);
             specCreator.setDomain(domainCreator.createDomain());
+            m_metaDataCalculators[i].createMetaData().forEach(specCreator::addMetaData);
             outColSpecs[i] = specCreator.createSpec();
         }
 
@@ -378,6 +388,7 @@ public class DataTableDomainCreator {
         int i = 0;
         for (DataCell c : row) {
             updateMinMax(i, c, m_mins, m_maxs, m_comparators);
+            m_metaDataCalculators[i].update(c);
             i++;
         }
     }
@@ -493,6 +504,7 @@ public class DataTableDomainCreator {
             if (!dataTableDomainCreator.m_maxsMissing[i] && otherMax != null) {
                 updateMax(i, m_maxs, otherMax, comparator);
             }
+            m_metaDataCalculators[i].merge(dataTableDomainCreator.m_metaDataCalculators[i]);
         }
     }
 
