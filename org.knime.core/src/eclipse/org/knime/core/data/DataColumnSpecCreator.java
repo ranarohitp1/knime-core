@@ -118,7 +118,7 @@ public final class DataColumnSpecCreator {
     /**
      * TODO
      */
-    private MetaDataManager m_metaDataManager;
+    private MetaDataImpl.Creator m_metaDataCreator;
 
     /**
      * Counter that is used when the setName() method is called with an
@@ -169,7 +169,7 @@ public final class DataColumnSpecCreator {
         m_colorHandler = cspec.getColorHandler();
         // property filter
         m_filterHandler = cspec.getFilterHandler().orElse(null);
-        m_metaDataManager = cspec.getMetaDataManager();
+        m_metaDataCreator = new MetaDataImpl.Creator(cspec.getMetaData());
     }
 
     /**
@@ -242,7 +242,7 @@ public final class DataColumnSpecCreator {
         }
 
         // TODO verify
-        m_metaDataManager = m_metaDataManager.merge(cspec2.getMetaDataManager());
+        m_metaDataCreator.merge(cspec2.getMetaData());
 
 
         if (hasDomainChanged) {
@@ -428,7 +428,7 @@ public final class DataColumnSpecCreator {
      * @since 4.1
      */
     public void addMetaData(final DataValueMetaData<?> metaData) {
-        m_metaDataManager.addMetaData(metaData);;
+        m_metaDataCreator.addMetaData(metaData);;
     }
 
     /**
@@ -452,6 +452,6 @@ public final class DataColumnSpecCreator {
         String[] elNames =
             m_elementNames == null ? new String[0] : m_elementNames;
         return new DataColumnSpec(m_name, elNames, m_type, m_domain,
-                m_properties, m_sizeHandler, m_colorHandler, m_shapeHandler, m_filterHandler, m_metaDataManager);
+                m_properties, m_sizeHandler, m_colorHandler, m_shapeHandler, m_filterHandler, m_metaDataCreator.create());
     }
 }

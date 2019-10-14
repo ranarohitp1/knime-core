@@ -56,7 +56,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.MetaData;
+import org.knime.core.data.DataValueMetaData;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
@@ -117,7 +117,7 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
     }
 
     @Override
-    public NominalDistributionValueMetaData merge(final MetaData other) {
+    public NominalDistributionValueMetaData merge(final DataValueMetaData<?> other) {
         // TODO informative error message
         CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaData, "Incompatible meta data type %s",
             other.getClass());

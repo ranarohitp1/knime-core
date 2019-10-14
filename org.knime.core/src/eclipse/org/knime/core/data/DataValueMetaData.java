@@ -48,6 +48,10 @@
  */
 package org.knime.core.data;
 
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
+import org.knime.core.node.config.ConfigWO;
+
 /**
  * This interface describes {@link MetaData} that belongs to a certain type of {@link DataValue}.
  *
@@ -55,10 +59,22 @@ package org.knime.core.data;
  * @param <T> the type of {@link DataValue} this {@link MetaData} belongs to
  * @since 4.1
  */
-public interface DataValueMetaData <T extends DataValue> extends MetaData {
+public interface DataValueMetaData<T extends DataValue> {
+
+    void load(final ConfigRO config) throws InvalidSettingsException;
+
+    void save(final ConfigWO config);
 
     Class<T> getValueType();
 
-    @Override
-    DataValueMetaData<T> merge(MetaData other);
+    /**
+     * TODO
+     *
+     * Note: Implementing classes must ensure that other has the correct value type i.e.
+     * <code>other.getValueType().equals(this.getValueType())</code>.
+     *
+     * @param other
+     * @return
+     */
+    DataValueMetaData<T> merge(DataValueMetaData<?> other);
 }

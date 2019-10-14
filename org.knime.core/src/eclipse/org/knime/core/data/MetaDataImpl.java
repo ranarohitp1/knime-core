@@ -49,8 +49,12 @@
 package org.knime.core.data;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
@@ -62,19 +66,21 @@ import org.knime.core.node.util.CheckUtils;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class MetaDataManager {
+final class MetaDataImpl implements MetaData {
+    // TODO could this become part of the DataColumnDomain?
 
     private final Map<Class<?>, DataValueMetaData<?>> m_valueMetaDataMap;
 
-    MetaDataManager() {
+    MetaDataImpl() {
         m_valueMetaDataMap = new HashMap<>();
     }
 
-    private MetaDataManager(final Map<Class<?>, DataValueMetaData<?>> valueMetaDataMap) {
+    private MetaDataImpl(final Map<Class<?>, DataValueMetaData<?>> valueMetaDataMap) {
         m_valueMetaDataMap = valueMetaDataMap;
     }
 
-    <T extends DataValue> DataValueMetaData<T> getMetaData(final Class<T> dataValueClass) {
+    @Override
+    public <T extends DataValue> DataValueMetaData<T> getForType(final Class<T> dataValueClass) {
         final DataValueMetaData<?> wildCardMetaData = m_valueMetaDataMap.get(dataValueClass);
         // TODO what should we do if no meta data is present? Optional?
         CheckUtils.checkState(dataValueClass.equals(wildCardMetaData.getValueType()), "Illegal mapping detected.");
@@ -84,9 +90,16 @@ final class MetaDataManager {
         return typedMetaData;
     }
 
-    void addMetaData(final DataValueMetaData<?> metaData) {
-        // TODO thread safety? How to handle collisions?
-        m_valueMetaDataMap.put(metaData.getValueType(), metaData);
+    @Override
+    public <T extends DataValue, M extends DataValueMetaData<T>> M getForType(final Class<T> dataValueType,
+        final Class<M> expectedMetaDataType) {
+        final DataValueMetaData<T> typedMetaData = getForType(dataValueType);
+        CheckUtils.checkArgument(expectedMetaDataType.isAssignableFrom(typedMetaData.getClass()),
+            "The stored meta data is of unexpected type. Expected '%s', got '%s'.", expectedMetaDataType.getName(),
+            typedMetaData.getClass().getName());
+        @SuppressWarnings("unchecked") // the above check ensures that this cast is valid
+        final M specificMetaData = (M)typedMetaData;
+        return specificMetaData;
     }
 
     void save(final ConfigWO config) {
@@ -99,11 +112,19 @@ final class MetaDataManager {
         }
     }
 
-    MetaDataManager merge(final MetaDataManager other) {
-        // TODO what to do with MetaData that is only contained in one of the managers?
-        final HashMap<Class<?>, DataValueMetaData<?>> merged = new HashMap<>(m_valueMetaDataMap);
-        other.m_valueMetaDataMap.forEach((k, v) -> merged.merge(k, v, (v1, v2) -> v1.merge(v2)));
-        return new MetaDataManager(merged);
+    @Override
+    public MetaDataImpl merge(final MetaData other) {
+        final Creator creator = new Creator(this);
+        creator.merge(other);
+        return creator.create();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Collection<DataValueMetaData<?>> getAllMetaData() {
+        return Collections.unmodifiableCollection(m_valueMetaDataMap.values());
     }
 
     private void loadMetaData(final String metaDataClassName, final ConfigRO config) throws InvalidSettingsException {
@@ -136,6 +157,33 @@ final class MetaDataManager {
     @Override
     public int hashCode() {
         return m_valueMetaDataMap.hashCode();
+    }
+
+    static final class Creator {
+        private final Map<Class<?>, DataValueMetaData<?>> m_valueMetaDataMap;
+
+        Creator() {
+            m_valueMetaDataMap = new HashMap<>();
+        }
+
+        Creator(final MetaData metaData) {
+            m_valueMetaDataMap = metaData.getAllMetaData().stream()
+                .collect(Collectors.toMap(DataValueMetaData::getValueType, Function.identity()));
+        }
+
+        void addMetaData(final DataValueMetaData<?> metaData) {
+            // TODO thread safety? How to handle collisions?
+            m_valueMetaDataMap.put(metaData.getValueType(), metaData);
+        }
+
+        void merge(final MetaData metaData) {
+            metaData.getAllMetaData()
+                .forEach(m -> m_valueMetaDataMap.merge(m.getValueType(), m, (m1, m2) -> m1.merge(m2)));
+        }
+
+        MetaDataImpl create() {
+            return new MetaDataImpl(new HashMap<>(m_valueMetaDataMap));
+        }
     }
 
 }

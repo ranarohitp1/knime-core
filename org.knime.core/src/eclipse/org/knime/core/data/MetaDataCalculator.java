@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
 import org.knime.core.data.DataValue.UtilityFactory;
 
 /**
+ * Calculates meta data from actual data by creating meta data corresponding to the presented rows.
  * TODO
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany

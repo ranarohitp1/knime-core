@@ -61,5 +61,11 @@ import org.knime.core.data.DataValueMetaData;
  */
 public interface NominalDistributionValueMetaData extends DataValueMetaData<NominalDistributionValue> {
 
+    /**
+     * The returned set is guaranteed to have a fixed order.
+     *
+     * @return the {@link DataCell values} this distribution is defined over
+     */
     Set<DataCell> getValues();
+
 }

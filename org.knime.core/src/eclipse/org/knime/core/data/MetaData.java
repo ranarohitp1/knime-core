@@ -48,11 +48,14 @@
  */
 package org.knime.core.data;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
-import org.knime.core.node.config.ConfigWO;
+import java.util.Collection;
 
 /**
+ * A {@link MetaData} object stores {@link DataValue} type specific meta information and allows the client to retrieve
+ * this information for a particular {@link DataValue} type via the {@link MetaData#getForType(Class)} method. Since a
+ * cell might implement multiple {@link DataValue} interfaces, it is possible that there are multiple
+ * {@link DataValueMetaData} objects stored in a single {@link MetaData} object, one for each implemented
+ * {@link DataValue} with meta data.
  *
  * TODO
  *
@@ -61,19 +64,28 @@ import org.knime.core.node.config.ConfigWO;
  */
 public interface MetaData {
 
-    void load(final ConfigRO config) throws InvalidSettingsException;
-
-    void save(final ConfigWO config);
-
     /**
-     * Creates a merged {@link MetaData} object that contains both the information of {@link MetaData this} as well as the
-     * information of {@link MetaData other}.
-     *
-     * TODO
+     * Creates a merged {@link MetaData} object that contains both the information of {@link MetaData this} as well as
+     * the information of {@link MetaData other}.
      *
      * @param other the MetaData to merge with (typically of the same class)
      * @return the merged MetaData
      * @throws IllegalArgumentException if this MetaData is incompatible with <b>other</b>
      */
     MetaData merge(MetaData other);
+
+    /**
+     * @return a collection containing all {@link DataValueMetaData meta data} stored in this object
+     */
+    Collection<DataValueMetaData<?>> getAllMetaData();
+
+    /**
+     * TODO behavior if the meta data is missing
+     *
+     * @param dataValueClass the type of {@link DataValue} for which the {@link DataValueMetaData} is required
+     * @return the {@link DataValueMetaData} for type <b>dataValueClass</b>
+     */
+    <T extends DataValue> DataValueMetaData<T> getForType(final Class<T> dataValueClass);
+
+    <T extends DataValue, M extends DataValueMetaData<T>> M getForType(final Class<T> dataValueType, final Class<M> expectedMetaDataType);
 }

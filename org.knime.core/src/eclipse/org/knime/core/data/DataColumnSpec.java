@@ -104,7 +104,7 @@ public final class DataColumnSpec {
     /** Holds the FilterHandler if one was set or null. */
     private final FilterHandler m_filterHandler;
 
-    private final MetaDataManager m_metaDataManager;
+    private final MetaDataImpl m_metaDataManager;
 
     /** Config key for the column name. */
     private static final String CFG_COLUMN_NAME = "column_name";
@@ -153,7 +153,7 @@ public final class DataColumnSpec {
      */
     DataColumnSpec(final String name, final String[] elNames, final DataType type, final DataColumnDomain domain,
         final DataColumnProperties props, final SizeHandler sizeHdl, final ColorHandler colorHdl,
-        final ShapeHandler shapeHdl, final FilterHandler filterHdl, final MetaDataManager metaDataManager) {
+        final ShapeHandler shapeHdl, final FilterHandler filterHdl, final MetaDataImpl metaData) {
         final String nullError = "Do not init DataColumnSpec with null arguments!";
         List<String> elNamesAsList = Collections.unmodifiableList(
             Arrays.asList(CheckUtils.checkArgumentNotNull(elNames, nullError)));
@@ -168,7 +168,7 @@ public final class DataColumnSpec {
         m_colorHandler = colorHdl;
         m_shapeHandler = shapeHdl;
         m_filterHandler = filterHdl;
-        m_metaDataManager = metaDataManager;
+        m_metaDataManager = metaData;
     }
 
     /**
@@ -272,16 +272,21 @@ public final class DataColumnSpec {
     }
 
 
+//    /**
+//     * TODO
+//     *
+//     * @since 4.1
+//     */
+//    public <T extends DataValue> DataValueMetaData<T> getMetaData(final Class<T> dataValueClass) {
+//        return m_metaDataManager.getMetaData(dataValueClass);
+//    }
+
     /**
      * TODO
      *
      * @since 4.1
      */
-    public <T extends DataValue> DataValueMetaData<T> getMetaData(final Class<T> dataValueClass) {
-        return m_metaDataManager.getMetaData(dataValueClass);
-    }
-
-    MetaDataManager getMetaDataManager() {
+    public MetaData getMetaData() {
         return m_metaDataManager;
     }
 
@@ -430,7 +435,7 @@ public final class DataColumnSpec {
         if (config.containsKey(CFG_FILTER)) {
             filter = FilterHandler.load(config.getConfig(CFG_FILTER));
         }
-        final MetaDataManager metaDataManager = new MetaDataManager();
+        final MetaDataImpl metaDataManager = new MetaDataImpl();
         if (config.containsKey(CFG_META_DATA)) {
             metaDataManager.load(config);
         }
