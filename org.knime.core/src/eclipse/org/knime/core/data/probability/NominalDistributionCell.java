@@ -54,6 +54,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -109,6 +110,15 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
                 }
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        // TODO we don't have the spec so we potentially don't know all class names or how many classes we have
+        return Arrays.toString(m_probabilities);
     }
 
     private static boolean isNotWrittenYet(final File file) {

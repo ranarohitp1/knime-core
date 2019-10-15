@@ -65,7 +65,7 @@ public final class NominalDistributionValueMetaDataCreator
 
     private final LinkedHashSet<DataCell> m_values;
 
-    private NominalDistributionValueMetaDataCreator() {
+    NominalDistributionValueMetaDataCreator() {
         m_values = new LinkedHashSet<>();
     }
 
