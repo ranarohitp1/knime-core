@@ -70,11 +70,23 @@ public interface DataValueMetaData<T extends DataValue> {
     /**
      * TODO
      *
-     * Note: Implementing classes must ensure that other has the correct value type i.e.
+     * Note: Implementing classes must ensure that <b>other</b> has the correct value type i.e.
      * <code>other.getValueType().equals(this.getValueType())</code>.
      *
      * @param other
      * @return
      */
     DataValueMetaData<T> merge(DataValueMetaData<?> other);
+
+    /**
+     * 
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public interface DataValueMetaDataSerializer {
+
+        DataValueMetaData<?> load(final ConfigRO config) throws InvalidSettingsException;
+
+        void save(final DataValueMetaData<?> metaData, final ConfigWO config);
+    }
+
 }
