@@ -49,7 +49,7 @@
 package org.knime.core.data;
 
 /**
- * TODO
+ * Allows to create {@link DataValueMetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @param <T> the type of {@link DataValue} the created {@link DataValueMetaData} refers to

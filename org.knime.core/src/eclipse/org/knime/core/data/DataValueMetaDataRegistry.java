@@ -58,7 +58,7 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
-import org.knime.core.data.DataValueMetaData.DataValueMetaDataSerializer;
+import org.knime.core.data.DataValueMetaData.Serializer;
 import org.knime.core.node.NodeLogger;
 
 /**
@@ -85,7 +85,7 @@ enum DataValueMetaDataRegistry {
 
     private static final String EXT_POINT_ID = "org.knime.core.DataValueMetaData";
 
-    private final Map<Class<? extends DataValueMetaData<?>>, DataValueMetaDataSerializer> m_serializers =
+    private final Map<Class<? extends DataValueMetaData<?>>, Serializer> m_serializers =
         new ConcurrentHashMap<>();
 
     private final Map<String, Class<? extends DataValueMetaData<?>>> m_metaDataClasses = new ConcurrentHashMap<>();
@@ -103,14 +103,14 @@ enum DataValueMetaDataRegistry {
         return INSTANCE;
     }
 
-    public Optional<DataValueMetaDataSerializer>
+    public Optional<Serializer>
         getSerializer(final Class<? extends DataValueMetaData<?>> metaDataClass) {
-        final DataValueMetaDataSerializer serializer =
+        final Serializer serializer =
             m_serializers.computeIfAbsent(metaDataClass, k -> scanExtensionPointForSerializer(k.getName()));
         return Optional.ofNullable(serializer);
     }
 
-    private static DataValueMetaDataSerializer scanExtensionPointForSerializer(final String metaDataClassName) {
+    private static Serializer scanExtensionPointForSerializer(final String metaDataClassName) {
         final IExtensionPoint point = getExtensionPoint();
         Optional<IConfigurationElement> o =
             Stream.of(point.getExtensions()).flatMap(ext -> Stream.of(ext.getConfigurationElements()))
@@ -123,11 +123,11 @@ enum DataValueMetaDataRegistry {
         }
     }
 
-    private static <T extends DataValue, M extends DataValueMetaData<T>> DataValueMetaDataSerializer
+    private static <T extends DataValue, M extends DataValueMetaData<T>> Serializer
         createSerializer(final IConfigurationElement configElement) {
         final String metaDataClassName = configElement.getAttribute(DATA_VALUE_META_DATA_CLASS);
         try {
-            return (DataValueMetaDataSerializer)configElement
+            return (Serializer)configElement
                 .createExecutableExtension(DATA_VALUE_META_DATA_SERIALIZER_CLASS);
         } catch (CoreException ex) {
             LOGGER.errorWithFormat(String.format("Could not create meta data serializer for '%s' from plug-in '%s': %",

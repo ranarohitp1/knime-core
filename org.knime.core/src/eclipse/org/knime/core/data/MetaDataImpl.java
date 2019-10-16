@@ -53,6 +53,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -80,26 +81,34 @@ final class MetaDataImpl implements MetaData {
     }
 
     @Override
-    public <T extends DataValue> DataValueMetaData<T> getForType(final Class<T> dataValueClass) {
+    public <T extends DataValue> Optional<DataValueMetaData<T>> getForType(final Class<T> dataValueClass) {
         final DataValueMetaData<?> wildCardMetaData = m_valueMetaDataMap.get(dataValueClass);
-        // TODO what should we do if no meta data is present? Optional?
+        if (wildCardMetaData == null) {
+            return Optional.empty();
+        }
         CheckUtils.checkState(dataValueClass.equals(wildCardMetaData.getValueType()), "Illegal mapping detected.");
         @SuppressWarnings("unchecked") // the check above ensures that wildCardMetaData
         // is indeed of type DataValueMetaData<T>
         final DataValueMetaData<T> typedMetaData = (DataValueMetaData<T>)wildCardMetaData;
-        return typedMetaData;
+        return Optional.of(typedMetaData);
     }
 
     @Override
-    public <T extends DataValue, M extends DataValueMetaData<T>> M getForType(final Class<T> dataValueType,
+    public <T extends DataValue, M extends DataValueMetaData<T>> Optional<M> getForType(final Class<T> dataValueType,
         final Class<M> expectedMetaDataType) {
-        final DataValueMetaData<T> typedMetaData = getForType(dataValueType);
-        CheckUtils.checkArgument(expectedMetaDataType.isAssignableFrom(typedMetaData.getClass()),
-            "The stored meta data is of unexpected type. Expected '%s', got '%s'.", expectedMetaDataType.getName(),
-            typedMetaData.getClass().getName());
-        @SuppressWarnings("unchecked") // the above check ensures that this cast is valid
-        final M specificMetaData = (M)typedMetaData;
-        return specificMetaData;
+        final Optional<DataValueMetaData<T>> typedMetaData = getForType(dataValueType);
+        return typedMetaData.flatMap(m -> castIfPresent(m, expectedMetaDataType));
+    }
+
+    private static <T extends DataValue, M extends DataValueMetaData<T>> Optional<M>
+        castIfPresent(final DataValueMetaData<T> metaData, final Class<M> expectedMetaDataClass) {
+        if (expectedMetaDataClass.isAssignableFrom(metaData.getClass())) {
+            @SuppressWarnings("unchecked") // checked at runtime
+            final M specificMetaData = (M)metaData;
+            return Optional.of(specificMetaData);
+        } else {
+            return Optional.empty();
+        }
     }
 
     void save(final ConfigWO config) {
@@ -172,7 +181,6 @@ final class MetaDataImpl implements MetaData {
         }
 
         void addMetaData(final DataValueMetaData<?> metaData) {
-            // TODO thread safety? How to handle collisions?
             m_valueMetaDataMap.put(metaData.getValueType(), metaData);
         }
 

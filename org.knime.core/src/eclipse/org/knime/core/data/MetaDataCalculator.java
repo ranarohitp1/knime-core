@@ -55,8 +55,11 @@ import java.util.stream.Collectors;
 import org.knime.core.data.DataValue.UtilityFactory;
 
 /**
- * Calculates meta data from actual data by creating meta data corresponding to the presented rows.
- * TODO
+ * Calculates meta data from actual data by creating meta data corresponding to the presented rows. This is done by
+ * retrieving the {@link DataValueMetaDataCreator creators} for all {@link DataValue} interfaces the {@link DataType} of
+ * the current column contains that declare that they have {@link DataValueMetaData}. A {@link DataValue} has
+ * {@link DataValueMetaData} if its {@link UtilityFactory} returns true in {@link UtilityFactory#hasMetaData()} in which
+ * case {@link UtilityFactory#getMetaDataCreator()} must return an instance of {@link DataValueMetaDataCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */

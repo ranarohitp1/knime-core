@@ -49,6 +49,7 @@
 package org.knime.core.data;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * A {@link MetaData} object stores {@link DataValue} type specific meta information and allows the client to retrieve
@@ -75,17 +76,32 @@ public interface MetaData {
     MetaData merge(MetaData other);
 
     /**
-     * @return a collection containing all {@link DataValueMetaData meta data} stored in this object
+     * Lists all {@link DataValueMetaData} stored in this object.
+     * Note that the returned collection is NOT mutable i.e. it is not possible to add or remove any elements.
+     *
+     * @return an immutable collection containing all {@link DataValueMetaData meta data} stored in this object
      */
     Collection<DataValueMetaData<?>> getAllMetaData();
 
     /**
-     * TODO behavior if the meta data is missing
+     * Retrieves the {@link DataValueMetaData} for the {@link DataValue} with class <b>dataValueClass</b>.
+     * An empty {@link Optional} is returned if no {@link DataValueMetaData} is available for <b>dataValueClass</b>.
      *
      * @param dataValueClass the type of {@link DataValue} for which the {@link DataValueMetaData} is required
      * @return the {@link DataValueMetaData} for type <b>dataValueClass</b>
      */
-    <T extends DataValue> DataValueMetaData<T> getForType(final Class<T> dataValueClass);
+    <T extends DataValue> Optional<DataValueMetaData<T>> getForType(final Class<T> dataValueClass);
 
-    <T extends DataValue, M extends DataValueMetaData<T>> M getForType(final Class<T> dataValueType, final Class<M> expectedMetaDataType);
+    /**
+     * Convenience wrapper around {@link MetaData#getForType(Class)} that also casts the {@link DataValueMetaData} to the
+     * expected type <b>expectedMetaDataClass</b>.
+     * An empty {@link Optional} is returned if there is no {@link DataValueMetaData} available for <b>dataValueClass</b>
+     * OR it cannot be casted to <b>expectedMetaDataClass</b>. (TODO discuss if we should fail in this case)
+     *
+     * @param dataValueClass the type of {@link DataValue} for which the {@link DataValueMetaData} is required
+     * @param expectedMetaDataClass the type of {@link DataValueMetaData} that is expected by the client
+     * @return the {@link DataValueMetaData} for <b>dataValueClass</b> casted to the specific type <b>expectedMetaDataClass</b>
+     */
+    <T extends DataValue, M extends DataValueMetaData<T>> Optional<M> getForType(final Class<T> dataValueClass,
+        final Class<M> expectedMetaDataClass);
 }
