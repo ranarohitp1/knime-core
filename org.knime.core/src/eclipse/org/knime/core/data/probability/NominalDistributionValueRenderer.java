@@ -51,7 +51,6 @@ package org.knime.core.data.probability;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataValueMetaData;
 import org.knime.core.data.renderer.AbstractDataValueRendererFactory;
@@ -88,7 +87,7 @@ public final class NominalDistributionValueRenderer extends DefaultDataValueRend
     protected void setValue(final Object value) {
         if (value instanceof NominalDistributionValue) {
             final NominalDistributionValueMetaData metaData = getMetaData();
-            final Set<DataCell> possibleValues = metaData.getValues();
+            final Set<String> possibleValues = metaData.getValues();
             NominalDistributionValue probDistrValue = (NominalDistributionValue)value;
             String displayString = possibleValues.stream().mapToDouble(probDistrValue::getProbability)
                 .mapToObj(Double::toString).collect(Collectors.joining(", ", "[", "]"));

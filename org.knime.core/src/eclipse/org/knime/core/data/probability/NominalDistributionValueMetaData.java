@@ -66,6 +66,6 @@ public interface NominalDistributionValueMetaData extends DataValueMetaData<Nomi
      *
      * @return the {@link DataCell values} this distribution is defined over
      */
-    Set<DataCell> getValues();
+    Set<String> getValues();
 
 }

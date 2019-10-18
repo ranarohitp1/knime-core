@@ -48,7 +48,6 @@
  */
 package org.knime.core.data;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +56,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.knime.core.data.DataValue.UtilityFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
@@ -70,13 +70,15 @@ import org.knime.core.node.util.CheckUtils;
 final class MetaDataImpl implements MetaData {
     // TODO could this become part of the DataColumnDomain?
 
-    private final Map<Class<?>, DataValueMetaData<?>> m_valueMetaDataMap;
+    private final Map<Class<? extends DataValue>, DataValueMetaData<?>> m_valueMetaDataMap;
+
+    static final MetaDataImpl EMPTY = new MetaDataImpl(Collections.emptyMap());
 
     MetaDataImpl() {
         m_valueMetaDataMap = new HashMap<>();
     }
 
-    private MetaDataImpl(final Map<Class<?>, DataValueMetaData<?>> valueMetaDataMap) {
+    private MetaDataImpl(final Map<Class<? extends DataValue>, DataValueMetaData<?>> valueMetaDataMap) {
         m_valueMetaDataMap = valueMetaDataMap;
     }
 
@@ -112,13 +114,21 @@ final class MetaDataImpl implements MetaData {
     }
 
     void save(final ConfigWO config) {
-        m_valueMetaDataMap.values().forEach(m -> m.save(config.addConfig(m.getClass().getCanonicalName())));
+        m_valueMetaDataMap.forEach((k, v) -> v.save(config.addConfig(k.getCanonicalName())));
     }
 
-    void load(final ConfigRO config) throws InvalidSettingsException {
-        for (final String key : config) {
-            loadMetaData(key, config.getConfig(key));
+    static MetaDataImpl load(final DataType type, final ConfigRO config) throws InvalidSettingsException {
+        final Map<Class<? extends DataValue>, DataValueMetaData<?>> valueMetaDataMap = new HashMap<>();
+        for (Class<? extends DataValue> valueClass : type.getValueClasses()) {
+            final UtilityFactory utilityFactory = DataType.getUtilityFor(valueClass);
+            if (!utilityFactory.hasMetaData()) {
+                // this DataValue class has no associated meta data
+                continue;
+            }
+            final DataValueMetaDataCreator<?> creator = utilityFactory.getMetaDataCreator();
+            valueMetaDataMap.put(valueClass, creator.load(config.getConfig(valueClass.getCanonicalName())));
         }
+        return new MetaDataImpl(valueMetaDataMap);
     }
 
     @Override
@@ -134,22 +144,6 @@ final class MetaDataImpl implements MetaData {
     @Override
     public Collection<DataValueMetaData<?>> getAllMetaData() {
         return Collections.unmodifiableCollection(m_valueMetaDataMap.values());
-    }
-
-    private void loadMetaData(final String metaDataClassName, final ConfigRO config) throws InvalidSettingsException {
-        try {
-            final Class<?> metaDataClass = Class.forName(metaDataClassName);
-            final DataValueMetaData<?> metaData = (DataValueMetaData<?>)metaDataClass.getConstructor().newInstance();
-            metaData.load(config);
-            m_valueMetaDataMap.put(metaData.getValueType(), metaData);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                | NoSuchMethodException | SecurityException ex) {
-            throw new InvalidSettingsException(
-                String.format("Instantiation of a meta data object of class %s failed.", metaDataClassName), ex);
-        } catch (ClassNotFoundException ex) {
-            throw new InvalidSettingsException(
-                String.format("Unknown meta data class %s encountered.", metaDataClassName), ex);
-        }
     }
 
     /**
@@ -169,7 +163,7 @@ final class MetaDataImpl implements MetaData {
     }
 
     static final class Creator {
-        private final Map<Class<?>, DataValueMetaData<?>> m_valueMetaDataMap;
+        private final Map<Class<? extends DataValue>, DataValueMetaData<?>> m_valueMetaDataMap;
 
         Creator() {
             m_valueMetaDataMap = new HashMap<>();

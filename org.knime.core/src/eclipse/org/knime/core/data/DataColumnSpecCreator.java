@@ -57,12 +57,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntPredicate;
 
 import org.knime.core.data.property.ColorHandler;
 import org.knime.core.data.property.ShapeHandler;
 import org.knime.core.data.property.SizeHandler;
 import org.knime.core.data.property.filter.FilterHandler;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.util.CheckUtils;
 
 /**
  * A factory class to create a {@link DataColumnSpec} (as the only way from
@@ -173,6 +175,153 @@ public final class DataColumnSpecCreator {
         m_metaDataCreator = new MetaDataImpl.Creator(cspec.getMetaData());
     }
 
+    private void updateType(final DataType other) {
+        if (m_type.equals(other)) {
+            return; // same type -> no update necessary
+        }
+        // the types differ so we have to use a common super type instead
+        final DataType common = DataType.getCommonSuperType(m_type, other);
+        assert common.isASuperTypeOf(m_type);
+        assert common.isASuperTypeOf(other);
+        m_type = common;
+    }
+
+    /**
+     * TODO
+     *
+     * @param cspec2
+     * @param allowDifferentTypes if set to false, varying types are supported and a common super type is determined in
+     *            this case
+     * @since 4.1
+     */
+    public void merge(final DataColumnSpec cspec2, final boolean allowDifferentTypes) {
+        CheckUtils.checkArgument(isCompatible(cspec2, allowDifferentTypes),
+            "Structures of DataColumnSpecs do not match.");
+
+        if (!allowDifferentTypes) {
+            updateType(cspec2.getType());
+        }
+
+        mergeDomains(cspec2.getDomain());
+
+        // TODO verify
+        m_metaDataCreator.merge(cspec2.getMetaData());
+        mergeColorHandlers(cspec2.getColorHandler());
+        mergeShapeHandlers(cspec2.getShapeHandler());
+        mergeSizeHandlers(cspec2.getSizeHandler());
+        mergeFilterHandlers(cspec2.getFilterHandler().orElse(null));
+        mergeProperties(cspec2.getProperties());
+        mergeElementNames(cspec2.getElementNames());
+    }
+
+    private void mergeElementNames(final List<String> elementNames) {
+        String[] elNames2Array = elementNames.toArray(new String[elementNames.size()]);
+        String[] elNamesArray =
+            m_elementNames == null ? new String[]{m_name} : m_elementNames;
+        if (!Arrays.deepEquals(elNamesArray, elNames2Array)) {
+            throw new IllegalArgumentException("Element names are not equal");
+        }
+    }
+
+    /**
+     * Takes the intersection of the properties
+     */
+    private void mergeProperties(final DataColumnProperties prop2) {
+        Map<String, String> mergedProps = new HashMap<>();
+        Enumeration<String> e = m_properties.properties();
+        while (e.hasMoreElements()) {
+            String key = e.nextElement();
+            String value = m_properties.getProperty(key);
+            if (prop2.getProperty(key) != null
+                    && prop2.getProperty(key).equals(value)) {
+                mergedProps.put(key, value);
+            }
+        }
+
+        if (mergedProps.size() != m_properties.size()) {
+            setProperties(new DataColumnProperties(mergedProps));
+        }
+    }
+
+    private void mergeFilterHandlers(final FilterHandler filterHandler) {
+        if (!Objects.equals(m_filterHandler, filterHandler)) {
+            LOGGER.warn("Column has already a filter handler attached, ignoring new handler.");
+        }
+    }
+
+    private void mergeSizeHandlers(final SizeHandler sizeHandler2) {
+        if (!Objects.equals(m_sizeHandler, sizeHandler2)) {
+            LOGGER.warn("Column has already a size handler attached, ignoring new handler.");
+        }
+    }
+
+    private void mergeShapeHandlers(final ShapeHandler shapeHandler2) {
+        if (!Objects.equals(m_shapeHandler, shapeHandler2)) {
+            LOGGER.warn("Column has already a shape handler attached, ignoring new handler.");
+        }
+    }
+
+    private void mergeColorHandlers(final ColorHandler colorHandler2) {
+        if (!Objects.equals(m_colorHandler, colorHandler2)) {
+            LOGGER.warn("Column has already a color handler attached, ignoring new handler.");
+        }
+    }
+
+    private Set<DataCell> mergePossibleValues(final Set<DataCell> oValues) {
+        final Set<DataCell> myValues = m_domain.getValues();
+        Set<DataCell> newValues;
+        if (myValues == null || oValues == null) {
+            newValues = null;
+        } else if (myValues.equals(oValues)) {
+            newValues = myValues;
+        } else {
+            newValues = new LinkedHashSet<>(myValues);
+            newValues.addAll(oValues);
+        }
+        return newValues;
+    }
+
+    private static DataCell mergeBound(final DataCell myBound, final DataCell otherBound,
+        final DataValueComparator comparator, final IntPredicate takeOther) {
+        if (myBound == null || otherBound == null) {
+            return null;
+        } else if (myBound.equals(otherBound)) {
+            return myBound;
+        } else if (takeOther.test(comparator.compare(myBound, otherBound))) {
+            return otherBound;
+        } else {
+            return myBound;
+        }
+    }
+
+    private void mergeDomains(final DataColumnDomain domain2) {
+        boolean hasDomainChanged = false;
+        final Set<DataCell> newValues = mergePossibleValues(domain2.getValues());
+        // != is safe because we return m_domain.getValues() if the other domain has the same values
+        hasDomainChanged |= newValues != m_domain.getValues();
+
+        DataValueComparator comparator = m_type.getComparator();
+
+        final DataCell myLower = m_domain.getLowerBound();
+        final DataCell newLower = mergeBound(myLower, domain2.getLowerBound(), comparator, i -> i > 0);
+        hasDomainChanged |= newLower != myLower;
+
+        final DataCell myUpper = m_domain.getUpperBound();
+        DataCell newUpper = mergeBound(myUpper, domain2.getUpperBound(), comparator, i1 -> i1 < 0);
+        hasDomainChanged |= newUpper != myUpper;
+        if (hasDomainChanged) {
+            setDomain(new DataColumnDomain(newLower, newUpper, newValues));
+        }
+    }
+
+    /**
+     * The spec is compatible if it has the same name and depending on whether the type should
+     * be enforced, the same type.
+     */
+    private boolean isCompatible(final DataColumnSpec cspec2, final boolean allowDifferentType) {
+        return cspec2.getName().equals(m_name) && (allowDifferentType || cspec2.getType().equals(m_type));
+    }
+
     /**
      * Merges the existing {@link DataColumnSpec} with a second
      * {@link DataColumnSpec}. If they have equal structure, the domain
@@ -188,6 +337,7 @@ public final class DataColumnSpecCreator {
      *             names are not equal.
      */
     public void merge(final DataColumnSpec cspec2) {
+        // TODO call other merge method
         if (!cspec2.getName().equals(m_name)
                 || !cspec2.getType().equals(m_type)) {
             throw new IllegalArgumentException("Structures of DataColumnSpecs"
@@ -251,52 +401,20 @@ public final class DataColumnSpecCreator {
         }
 
         // check for redundant color handler
-        ColorHandler colorHandler2 = cspec2.getColorHandler();
-        if (!Objects.equals(m_colorHandler, colorHandler2)) {
-            LOGGER.warn("Column has already a color handler attached, ignoring new handler.");
-        }
+        mergeColorHandlers(cspec2.getColorHandler());
 
         // check for redundant shape handler
-        ShapeHandler shapeHandler2 = cspec2.getShapeHandler();
-        if (!Objects.equals(m_shapeHandler, shapeHandler2)) {
-            LOGGER.warn("Column has already a shape handler attached, ignoring new handler.");
-        }
+        mergeShapeHandlers(cspec2.getShapeHandler());
 
         // check for redundant size handler
-        SizeHandler sizeHandler2 = cspec2.getSizeHandler();
-        if (!Objects.equals(m_sizeHandler, sizeHandler2)) {
-            LOGGER.warn("Column has already a size handler attached, ignoring new handler.");
-        }
+        mergeSizeHandlers(cspec2.getSizeHandler());
 
         // check for redundant filter handler
-        FilterHandler filterHandler = cspec2.getFilterHandler().orElse(null);
-        if (!Objects.equals(m_filterHandler, filterHandler)) {
-            LOGGER.warn("Column has already a filter handler attached, ignoring new handler.");
-        }
+        mergeFilterHandlers(cspec2.getFilterHandler().orElse(null));
 
         // merge properties, take intersection
-        DataColumnProperties prop2 = cspec2.getProperties();
-        Map<String, String> mergedProps = new HashMap<String, String>();
-        Enumeration<String> e = m_properties.properties();
-        while (e.hasMoreElements()) {
-            String key = e.nextElement();
-            String value = m_properties.getProperty(key);
-            if (prop2.getProperty(key) != null
-                    && prop2.getProperty(key).equals(value)) {
-                mergedProps.put(key, value);
-            }
-        }
-
-        if (mergedProps.size() != m_properties.size()) {
-            setProperties(new DataColumnProperties(mergedProps));
-        }
-        List<String> elNames2 = cspec2.getElementNames();
-        String[] elNames2Array = elNames2.toArray(new String[elNames2.size()]);
-        String[] elNamesArray =
-            m_elementNames == null ? new String[]{m_name} : m_elementNames;
-        if (!Arrays.deepEquals(elNamesArray, elNames2Array)) {
-            throw new IllegalArgumentException("Element names are not equal");
-        }
+        mergeProperties(cspec2.getProperties());
+        mergeElementNames(cspec2.getElementNames());
     }
 
     /**
@@ -430,6 +548,16 @@ public final class DataColumnSpecCreator {
      */
     public void addMetaData(final DataValueMetaData<?> metaData) {
         m_metaDataCreator.addMetaData(metaData);;
+    }
+
+    /**
+     * Returns the {@link DataType} of this {@link DataColumnSpecCreator}.
+     *
+     * @return the {@link DataType}
+     * @since 4.1
+     */
+    public DataType getType() {
+        return m_type;
     }
 
     /**

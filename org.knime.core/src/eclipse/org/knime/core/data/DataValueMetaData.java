@@ -98,7 +98,7 @@ public interface DataValueMetaData<T extends DataValue> {
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public interface Serializer {
+    public interface Serializer <M extends DataValueMetaData<?>> {
 
         /**
          * Creates a new {@link DataValueMetaData} object from {@link ConfigRO}.
@@ -107,7 +107,7 @@ public interface DataValueMetaData<T extends DataValue> {
          * @return a new {@link DataValueMetaData} containing the meta data stored in {@link ConfigRO config}
          * @throws InvalidSettingsException if the meta data in {@link ConfigRO config} is invalid
          */
-        DataValueMetaData<?> load(final ConfigRO config) throws InvalidSettingsException;
+        M load(final ConfigRO config) throws InvalidSettingsException;
 
         /**
          * Saves {@link DataValueMetaData metaData} in {@link ConfigWO config}.
@@ -115,7 +115,8 @@ public interface DataValueMetaData<T extends DataValue> {
          * @param metaData to save
          * @param config to save to
          */
-        void save(final DataValueMetaData<?> metaData, final ConfigWO config);
+        void save(final M metaData, final ConfigWO config);
+
     }
 
 }

@@ -82,18 +82,18 @@ public interface NominalDistributionValue extends DataValue {
      * @param value {@link DataCell} to retrieve the probability for
      * @return the probability of {@link DataCell value} in this distribution
      */
-    double getProbability(final DataCell value);
+    double getProbability(final String value);
 
     /**
      * @param value the {@link DataCell} to check
      * @return true if {@link DataCell value} is known to this distribution
      */
-    boolean isKnown(final DataCell value);
+    boolean isKnown(final String value);
 
     /**
      * @return the set of values this distribution knows
      */
-    Set<DataCell> getKnownValues();
+    Set<String> getKnownValues();
 
     /** Implementations of the meta information of this value class. */
     class NominalDistributionUtilityFactory extends ExtensibleUtilityFactory {

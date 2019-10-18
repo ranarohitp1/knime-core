@@ -48,6 +48,9 @@
  */
 package org.knime.core.data;
 
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
+
 /**
  * Allows to create {@link DataValueMetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
  *
@@ -56,6 +59,7 @@ package org.knime.core.data;
  * @since 4.1
  */
 public interface DataValueMetaDataCreator<T extends DataValue> {
+    // TODO could this be typed on DataValueMetaData<?> instead?
 
     /**
      * Updates the meta data according to the contents of cell.</br>
@@ -75,6 +79,8 @@ public interface DataValueMetaDataCreator<T extends DataValue> {
      * @return the {@link DataValueMetaData} containing the meta data at the current state of this creator
      */
     DataValueMetaData<T> create();
+
+    DataValueMetaData<T> load(final ConfigRO config) throws InvalidSettingsException;
 
     /**
      * Creates a deep copy of this creator i.e. calling update on the copied creator

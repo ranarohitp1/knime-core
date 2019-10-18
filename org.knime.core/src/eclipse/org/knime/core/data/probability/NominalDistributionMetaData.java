@@ -70,15 +70,15 @@ final class NominalDistributionMetaData {
 
     private static final MemoryAlertAwareGuavaCache CACHE = new MemoryAlertAwareGuavaCache();
 
-    private final LinkedHashMap<DataCell, Integer> m_valueMap = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Integer> m_valueMap = new LinkedHashMap<>();
 
     private final UUID m_id;
 
-    NominalDistributionMetaData(final DataCell[] values) {
+    NominalDistributionMetaData(final String[] values) {
         this(UUID.randomUUID(), values);
     }
 
-    private NominalDistributionMetaData(final UUID id, final DataCell[] values) {
+    private NominalDistributionMetaData(final UUID id, final String[] values) {
         m_id = id;
         Arrays.stream(values).forEach(v -> m_valueMap.put(v, m_valueMap.size()));
     }
@@ -91,7 +91,7 @@ final class NominalDistributionMetaData {
      * @param cell the cell for which to retrieve the index
      * @return the index of <b>cell</b> or -1 if <b>cell</b> is unknown
      */
-    int getIndex(final DataCell cell) {
+    int getIndex(final String cell) {
         final Integer index = m_valueMap.get(cell);
         return index == null ? -1 : index.intValue();
     }
@@ -100,7 +100,7 @@ final class NominalDistributionMetaData {
         return m_valueMap.size();
     }
 
-    Set<DataCell> getValues() {
+    Set<String> getValues() {
         return Collections.unmodifiableSet(m_valueMap.keySet());
     }
 
@@ -112,8 +112,9 @@ final class NominalDistributionMetaData {
 
     static NominalDistributionMetaData read(final ObjectInputStream in)
         throws ClassNotFoundException, IOException, ExecutionException {
+        // TODO use configs instead of input streams to allow reuse as DataValueMetaData
         final UUID id = (UUID)in.readObject();
-        return CACHE.get(id, () -> new NominalDistributionMetaData(id, (DataCell[])in.readObject()));
+        return CACHE.get(id, () -> new NominalDistributionMetaData(id, (String[])in.readObject()));
     }
 
 }

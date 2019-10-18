@@ -52,6 +52,8 @@ import java.util.LinkedHashSet;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataValueMetaDataCreator;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.util.CheckUtils;
 
 /**
@@ -63,13 +65,13 @@ import org.knime.core.node.util.CheckUtils;
 public final class NominalDistributionValueMetaDataCreator
     implements DataValueMetaDataCreator<NominalDistributionValue> {
 
-    private final LinkedHashSet<DataCell> m_values;
+    private final LinkedHashSet<String> m_values;
 
     NominalDistributionValueMetaDataCreator() {
         m_values = new LinkedHashSet<>();
     }
 
-    private NominalDistributionValueMetaDataCreator(final LinkedHashSet<DataCell> values) {
+    private NominalDistributionValueMetaDataCreator(final LinkedHashSet<String> values) {
         m_values = new LinkedHashSet<>(values);
     }
 
@@ -113,6 +115,16 @@ public final class NominalDistributionValueMetaDataCreator
             other.getClass().getName());
         final NominalDistributionValueMetaDataCreator otherCreator = (NominalDistributionValueMetaDataCreator)other;
         m_values.addAll(otherCreator.m_values);
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws InvalidSettingsException
+     */
+    @Override
+    public NominalDistributionValueMetaData load(final ConfigRO config) throws InvalidSettingsException {
+        final String[] values = config.getStringArray(DefaultNominalDistributionValueMetaData.CFG_VALUES);
+        return new DefaultNominalDistributionValueMetaData(values);
     }
 
 }

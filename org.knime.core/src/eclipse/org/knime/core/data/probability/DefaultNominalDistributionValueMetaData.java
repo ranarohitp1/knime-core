@@ -70,9 +70,9 @@ import org.knime.core.node.util.CheckUtils;
  */
 public final class DefaultNominalDistributionValueMetaData implements NominalDistributionValueMetaData {
 
-    private static final String CFG_VALUES = "values";
+    static final String CFG_VALUES = "values";
 
-    private Set<DataCell> m_values;
+    private Set<String> m_values;
 
     /**
      * Framework constructor.
@@ -82,24 +82,24 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
 
     }
 
-    public DefaultNominalDistributionValueMetaData(final DataCell[] values) {
+    public DefaultNominalDistributionValueMetaData(final String[] values) {
         m_values = toLinkedHashSet(values);
     }
 
-    DefaultNominalDistributionValueMetaData(final Collection<DataCell> values) {
+    DefaultNominalDistributionValueMetaData(final Collection<String> values) {
         m_values = new LinkedHashSet<>(values);
     }
 
-    private DefaultNominalDistributionValueMetaData(final LinkedHashSet<DataCell> values) {
+    private DefaultNominalDistributionValueMetaData(final LinkedHashSet<String> values) {
         m_values = values;
     }
 
-    private static LinkedHashSet<DataCell> toLinkedHashSet(final DataCell[] values) {
+    private static <T> LinkedHashSet<T> toLinkedHashSet(final T[] values) {
         return Arrays.stream(values).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
-    public Set<DataCell> getValues() {
+    public Set<String> getValues() {
         return Collections.unmodifiableSet(m_values);
     }
 
@@ -108,7 +108,7 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
      */
     @Override
     public void load(final ConfigRO config) throws InvalidSettingsException {
-        m_values = toLinkedHashSet(config.getDataCellArray(CFG_VALUES));
+        m_values = toLinkedHashSet(config.getStringArray(CFG_VALUES));
     }
 
     @Override
@@ -127,7 +127,7 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
         } else if (m_values.equals(otherMeta.getValues())) {
             return this;
         } else {
-            final LinkedHashSet<DataCell> mergedValues = new LinkedHashSet<>();
+            final LinkedHashSet<String> mergedValues = new LinkedHashSet<>();
             mergedValues.addAll(m_values);
             mergedValues.addAll(otherMeta.getValues());
             return new DefaultNominalDistributionValueMetaData(mergedValues);

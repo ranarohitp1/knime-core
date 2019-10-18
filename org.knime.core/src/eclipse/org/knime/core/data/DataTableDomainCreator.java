@@ -114,6 +114,7 @@ public class DataTableDomainCreator {
     public DataTableDomainCreator(final DataTableSpec inputSpec,
         final DomainCreatorColumnSelection domainValuesColumnSelection,
         final DomainCreatorColumnSelection domainMinMaxColumnSelection) {
+        // TODO should we have a MetaDataColumnSelection too? We can't drop the information but we could replace it with the information provided by the cells
         m_inputSpec = inputSpec;
         m_mins = new DataCell[inputSpec.getNumColumns()];
         m_minsMissing = new boolean[inputSpec.getNumColumns()];
@@ -139,7 +140,7 @@ public class DataTableDomainCreator {
                             (v1, v2) -> {
                                 throw new IllegalStateException();
                             }, //
-                            () -> new LinkedHashMap<>()));
+                            LinkedHashMap::new));
                 } else {
                     // since we're doing a lot of checks for whether a DataCell is contained in the set of possible
                     // values, we should reduce the amount of expected hash collisions by creating a sufficiently

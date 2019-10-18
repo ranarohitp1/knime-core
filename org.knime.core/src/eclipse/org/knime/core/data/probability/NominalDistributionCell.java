@@ -58,7 +58,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import org.knime.core.data.DataCell;
 import org.knime.core.data.DataCellDataInput;
 import org.knime.core.data.DataCellDataOutput;
 import org.knime.core.data.DataCellSerializer;
@@ -147,7 +146,7 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
      * {@inheritDoc}
      */
     @Override
-    public double getProbability(final DataCell value) {
+    public double getProbability(final String value) {
         final int idx = m_metaData.getIndex(value);
         return idx == -1 ? 0.0 : m_probabilities[idx];
     }
@@ -156,7 +155,7 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
      * {@inheritDoc}
      */
     @Override
-    public boolean isKnown(final DataCell value) {
+    public boolean isKnown(final String value) {
         return m_metaData.getIndex(value) != -1;
     }
 
@@ -164,7 +163,7 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
      * {@inheritDoc}
      */
     @Override
-    public Set<DataCell> getKnownValues() {
+    public Set<String> getKnownValues() {
         return m_metaData.getValues();
     }
 

@@ -435,9 +435,12 @@ public final class DataColumnSpec {
         if (config.containsKey(CFG_FILTER)) {
             filter = FilterHandler.load(config.getConfig(CFG_FILTER));
         }
-        final MetaDataImpl metaDataManager = new MetaDataImpl();
+        final MetaDataImpl metaDataManager;
         if (config.containsKey(CFG_META_DATA)) {
-            metaDataManager.load(config);
+            metaDataManager = MetaDataImpl.load(type, config);
+        } else {
+            // still create an empty meta data object to avoid issues with NPEs
+            metaDataManager = new MetaDataImpl();
         }
         return new DataColumnSpec(name, elNames, type, domain, properties, size, color, shape, filter, metaDataManager);
     }
