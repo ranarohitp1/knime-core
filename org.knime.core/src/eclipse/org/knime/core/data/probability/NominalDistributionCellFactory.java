@@ -49,6 +49,7 @@
 package org.knime.core.data.probability;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.knime.core.data.DataType;
@@ -70,7 +71,7 @@ public class NominalDistributionCellFactory {
      */
     public static final DataType TYPE = NominalDistributionCell.TYPE;
 
-    private final NominalDistributionMetaData m_metaData;
+    private final NominalDistributionCellMetaData m_metaData;
 
     private final FileStore m_fileStore;
 
@@ -89,23 +90,37 @@ public class NominalDistributionCellFactory {
             // TODO is this correct?
             throw new IllegalStateException(ex);
         }
-        m_metaData = new NominalDistributionMetaData(values);
+        m_metaData = new NominalDistributionCellMetaData(values);
     }
 
     /**
      * @param probabilities the probabilities for the different values
+     * @param epsilon the imprecision that the sum of probabilities is allowed to have
      * @return a {@link NominalDistributionCell} containing <b>probabilities</b>
      * @throws NullPointerException if <b>probabilities</b> is null
      * @throws IllegalArgumentException if <b>probabilities</b> does not have the same number of elements as there are
      *             values in the meta data
      */
     public NominalDistributionCell createCell(final double[] probabilities, final double epsilon) {
-        // TODO implement epsilon functionality
-        CheckUtils.checkNotNull(probabilities);
+        // Check null
+        CheckUtils.checkNotNull(probabilities, "The list of probabilities must not be null.");
+        // Check that probabilities are compatible with meta data
         CheckUtils.checkArgument(probabilities.length == m_metaData.size(),
-            "The number of elements in probabilities (%s) must match the number of values in the meta data (%s).",
-            probabilities.length, m_metaData.size());
+                "The number of elements in probabilities (%s) must match the number of values in the meta data (%s).",
+                probabilities.length, m_metaData.size());
+        // check that precision is positive
+        CheckUtils.checkArgument(epsilon >= 0, "The epsilon must not be negative");
+        // check that no probability is negative
+        CheckUtils.checkArgument(Arrays.stream(probabilities).noneMatch(e -> e < 0d),
+            "Probability must not be negative.");
+        // check that probabilities sum up to 1
+        CheckUtils.checkArgument(sumUpToOne(Arrays.stream(probabilities).sum(), epsilon),
+            "The probabilities do not sum up to 1. Consider setting a proper epsilon.");
         return new NominalDistributionCell(m_metaData, m_fileStore, probabilities.clone());
+    }
+
+    private static boolean sumUpToOne(final double a, final double epsilon) {
+        return Math.abs(a - 1.0d) < epsilon;
     }
 
     public NominalDistributionCell createCell(final String value) {

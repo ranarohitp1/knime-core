@@ -79,11 +79,11 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
 
     private static final long serialVersionUID = 1L;
 
-    private transient NominalDistributionMetaData m_metaData;
+    private transient NominalDistributionCellMetaData m_metaData;
 
     private double[] m_probabilities;
 
-    NominalDistributionCell(final NominalDistributionMetaData metaData, final FileStore fileStore,
+    NominalDistributionCell(final NominalDistributionCellMetaData metaData, final FileStore fileStore,
         final double[] probabilities) {
         super(fileStore);
         CheckUtils.checkArgument(metaData.size() == probabilities.length,
@@ -136,7 +136,7 @@ public class NominalDistributionCell extends FileStoreCell implements NominalDis
     protected void postConstruct() throws IOException {
         final File file = getFile();
         try (final ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
-            m_metaData = NominalDistributionMetaData.read(in);
+            m_metaData = NominalDistributionCellMetaData.read(in);
         } catch (ClassNotFoundException | ExecutionException ex) {
             throw new IOException("The meta data cannot be read.", ex);
         }

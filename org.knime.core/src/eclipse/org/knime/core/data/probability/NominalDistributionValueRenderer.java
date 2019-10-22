@@ -100,7 +100,7 @@ public final class NominalDistributionValueRenderer extends DefaultDataValueRend
     private NominalDistributionValueMetaData getMetaData() {
         final DataColumnSpec spec = getColSpec();
         final DataValueMetaData<NominalDistributionValue> metaData =
-            spec.getMetaData().getForType(NominalDistributionValue.class)
+            spec.getMetaDataForType(NominalDistributionValue.class)
                 .orElseThrow(() -> new IllegalStateException("No meta data available."));
         CheckUtils.checkState(metaData instanceof NominalDistributionValueMetaData,
             "The meta data of a NominalDistributionValue must be of type %s but was of type %s instead.",

@@ -72,6 +72,22 @@ final class MetaDataCalculator {
             .filter(UtilityFactory::hasMetaData).map(UtilityFactory::getMetaDataCreator).collect(Collectors.toList());
     }
 
+    MetaDataCalculator(final DataColumnSpec spec, final boolean initializeWithSpec) {
+        m_metaDataCreators = spec.getType().getValueClasses().stream().map(DataType::getUtilityFor)
+            .filter(UtilityFactory::hasMetaData).map(UtilityFactory::getMetaDataCreator).collect(Collectors.toList());
+        if (initializeWithSpec) {
+            m_metaDataCreators.forEach(
+                m -> m.merge(spec.getMetaDataForType(m.getValueType()).orElseThrow(() -> new IllegalStateException(
+                    String.format("No meta data for type %s in column %s.", m.getValueType(), spec)))));
+        }
+    }
+
+    /**
+     * Copies <b>toCopy</b> by also copying all {@link DataValueMetaDataCreator DataValueMetaDataCreators} it contains.
+     * This means that any later change to <b>toCopy</b> does NOT affect the newly created instance.
+     *
+     * @param toCopy the MetaDataCalculator to copy
+     */
     MetaDataCalculator(final MetaDataCalculator toCopy) {
         m_metaDataCreators =
             toCopy.m_metaDataCreators.stream().map(DataValueMetaDataCreator::copy).collect(Collectors.toList());

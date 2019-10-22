@@ -80,7 +80,20 @@ public interface DataValueMetaDataCreator<T extends DataValue> {
      */
     DataValueMetaData<T> create();
 
-    DataValueMetaData<T> load(final ConfigRO config) throws InvalidSettingsException;
+    /**
+     * Creates a {@link DataValueMetaData} from a stored {@link ConfigRO config}.
+     * This is used during serialization of {@link DataColumnSpec} objects.
+     *
+     * @param config containing the necessary meta data
+     * @return the {@link DataValueMetaData} containing the meta data stored in {@link ConfigRO config}
+     * @throws InvalidSettingsException if the data stored in {@link ConfigRO config} is invalid
+     */
+    DataValueMetaData<T> createFromConfig(final ConfigRO config) throws InvalidSettingsException;
+
+    /**
+     * @return the {@link DataValue} type the {@link DataValueMetaData} created by this instance refers to
+     */
+    Class<T> getValueType();
 
     /**
      * Creates a deep copy of this creator i.e. calling update on the copied creator
@@ -94,7 +107,16 @@ public interface DataValueMetaDataCreator<T extends DataValue> {
      * Merges two {@link DataValueMetaDataCreator creators} by including the data
      * from <b>other</b> into this creator.
      *
-     * @param other the creator to merge into this
+     * @param other the creator to merge into this creator
      */
-    void merge(final DataValueMetaDataCreator<?> other);
+    default void merge(final DataValueMetaDataCreator<?> other) {
+        merge(other.create());
+    }
+
+    /**
+     * Merges the information from {@link DataValueMetaData other} into this creator.
+     *
+     * @param other the {@link DataValueMetaData} to merge into this creator
+     */
+    void merge(final DataValueMetaData<?> other);
 }

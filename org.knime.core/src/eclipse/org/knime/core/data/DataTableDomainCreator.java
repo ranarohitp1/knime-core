@@ -56,6 +56,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.knime.core.data.DataValue.UtilityFactory;
 import org.knime.core.data.container.BlobWrapperDataCell;
 import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.node.BufferedDataTable;
@@ -110,10 +111,44 @@ public class DataTableDomainCreator {
      * @param domainValuesColumnSelection defines columns to recreate or drop domain values
      * @param domainMinMaxColumnSelection defines columns to recreate or drop min, max values of the domain
      */
-    @SuppressWarnings("unchecked")
     public DataTableDomainCreator(final DataTableSpec inputSpec,
         final DomainCreatorColumnSelection domainValuesColumnSelection,
         final DomainCreatorColumnSelection domainMinMaxColumnSelection) {
+        this(inputSpec, domainValuesColumnSelection, domainMinMaxColumnSelection, new DomainCreatorColumnSelection() {
+
+            @Override
+            public boolean dropDomain(final DataColumnSpec colSpec) {
+                // TODO discuss with Bernd/Mark what the default should be
+                return false;
+            }
+
+            @Override
+            public boolean createDomain(final DataColumnSpec colSpec) {
+                return hasMetaData(colSpec.getType());
+            }
+        });
+    }
+
+    private static boolean hasMetaData(final DataType type) {
+        return type.getValueClasses().stream().map(DataType::getUtilityFor).anyMatch(UtilityFactory::hasMetaData);
+    }
+
+    /**
+     * A new instance that recreates the domain of certains columns. Which columns are processed and if the domains
+     * should be initialized with the domain from the incoming table can be controlled by the two
+     * {@link DomainCreatorColumnSelection} arguments.
+     *
+     * @param inputSpec the spec of the input/original table
+     * @param domainValuesColumnSelection defines columns to recreate or drop domain values
+     * @param domainMinMaxColumnSelection defines columns to recreate or drop min, max values of the domain
+     * @param metaDataColumnSelection defines columns to calculate metaData for
+     * @since 4.1
+     */
+    @SuppressWarnings("unchecked")
+    public DataTableDomainCreator(final DataTableSpec inputSpec,
+        final DomainCreatorColumnSelection domainValuesColumnSelection,
+        final DomainCreatorColumnSelection domainMinMaxColumnSelection,
+        final DomainCreatorColumnSelection metaDataColumnSelection) {
         // TODO should we have a MetaDataColumnSelection too? We can't drop the information but we could replace it with the information provided by the cells
         m_inputSpec = inputSpec;
         m_mins = new DataCell[inputSpec.getNumColumns()];
@@ -172,8 +207,8 @@ public class DataTableDomainCreator {
             if (m_maxs[i] != null) {
                 m_maxsMissing[i] = m_maxs[i].isMissing();
             }
-            // TODO do we always want to create the meta data? (At least for NominalDistribution we do)
-            m_metaDataCalculators[i] = new MetaDataCalculator(colSpec.getType());
+            // TODO discuss with Bernd/Mark how we should treat meta data in the DataTableDomainCreator
+            m_metaDataCalculators[i] = new MetaDataCalculator(colSpec, !metaDataColumnSelection.dropDomain(colSpec));
             i++;
         }
     }
@@ -219,7 +254,6 @@ public class DataTableDomainCreator {
      */
     @SuppressWarnings("unchecked")
     public DataTableDomainCreator(final DataTableDomainCreator toCopy) {
-        // TODO how to handle meta data
         m_domainValuesColumnSelection = toCopy.m_domainValuesColumnSelection;
         m_domainMinMaxColumnSelection = toCopy.m_domainMinMaxColumnSelection;
         m_maxPossibleValues = toCopy.m_maxPossibleValues;
@@ -359,7 +393,7 @@ public class DataTableDomainCreator {
 
             DataColumnSpecCreator specCreator = new DataColumnSpecCreator(original);
             specCreator.setDomain(domainCreator.createDomain());
-            m_metaDataCalculators[i].createMetaData().forEach(specCreator::addMetaData);
+            m_metaDataCalculators[i].createMetaData().forEach(m -> specCreator.addMetaData(m, false));
             outColSpecs[i] = specCreator.createSpec();
         }
 

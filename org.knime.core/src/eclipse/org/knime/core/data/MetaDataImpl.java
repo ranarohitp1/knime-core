@@ -67,8 +67,7 @@ import org.knime.core.node.util.CheckUtils;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class MetaDataImpl implements MetaData {
-    // TODO could this become part of the DataColumnDomain?
+final class MetaDataImpl {
 
     private final Map<Class<? extends DataValue>, DataValueMetaData<?>> m_valueMetaDataMap;
 
@@ -82,7 +81,6 @@ final class MetaDataImpl implements MetaData {
         m_valueMetaDataMap = valueMetaDataMap;
     }
 
-    @Override
     public <T extends DataValue> Optional<DataValueMetaData<T>> getForType(final Class<T> dataValueClass) {
         final DataValueMetaData<?> wildCardMetaData = m_valueMetaDataMap.get(dataValueClass);
         if (wildCardMetaData == null) {
@@ -95,7 +93,6 @@ final class MetaDataImpl implements MetaData {
         return Optional.of(typedMetaData);
     }
 
-    @Override
     public <T extends DataValue, M extends DataValueMetaData<T>> Optional<M> getForType(final Class<T> dataValueType,
         final Class<M> expectedMetaDataType) {
         final Optional<DataValueMetaData<T>> typedMetaData = getForType(dataValueType);
@@ -126,24 +123,19 @@ final class MetaDataImpl implements MetaData {
                 continue;
             }
             final DataValueMetaDataCreator<?> creator = utilityFactory.getMetaDataCreator();
-            valueMetaDataMap.put(valueClass, creator.load(config.getConfig(valueClass.getCanonicalName())));
+            valueMetaDataMap.put(valueClass, creator.createFromConfig(config.getConfig(valueClass.getCanonicalName())));
         }
         return new MetaDataImpl(valueMetaDataMap);
     }
 
-    @Override
-    public MetaDataImpl merge(final MetaData other) {
+    MetaDataImpl merge(final MetaDataImpl other) {
         final Creator creator = new Creator(this);
         creator.merge(other);
         return creator.create();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Collection<DataValueMetaData<?>> getAllMetaData() {
-        return Collections.unmodifiableCollection(m_valueMetaDataMap.values());
+    private Collection<DataValueMetaData<?>> getAllMetaData() {
+        return m_valueMetaDataMap.values();
     }
 
     /**
@@ -169,16 +161,20 @@ final class MetaDataImpl implements MetaData {
             m_valueMetaDataMap = new HashMap<>();
         }
 
-        Creator(final MetaData metaData) {
+        Creator(final MetaDataImpl metaData) {
             m_valueMetaDataMap = metaData.getAllMetaData().stream()
                 .collect(Collectors.toMap(DataValueMetaData::getValueType, Function.identity()));
         }
 
-        void addMetaData(final DataValueMetaData<?> metaData) {
-            m_valueMetaDataMap.put(metaData.getValueType(), metaData);
+        void addMetaData(final DataValueMetaData<?> metaData, final boolean overwrite) {
+            if (overwrite) {
+                m_valueMetaDataMap.put(metaData.getValueType(), metaData);
+            } else {
+                m_valueMetaDataMap.merge(metaData.getValueType(), metaData, (m1, m2) -> m1.merge(m2));
+            }
         }
 
-        void merge(final MetaData metaData) {
+        void merge(final MetaDataImpl metaData) {
             metaData.getAllMetaData()
                 .forEach(m -> m_valueMetaDataMap.merge(m.getValueType(), m, (m1, m2) -> m1.merge(m2)));
         }

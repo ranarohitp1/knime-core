@@ -245,7 +245,7 @@ public final class DataColumnSpec {
      * Returns the <code>ShapeHandler</code> defined on this column, if
      * available. Otherwise <code>null</code> will be returned.
      *
-     * @return atached <code>ShapeHandler</code> or <code>null</code>
+     * @return attached <code>ShapeHandler</code> or <code>null</code>
      */
     public ShapeHandler getShapeHandler() {
         return m_shapeHandler;
@@ -271,24 +271,39 @@ public final class DataColumnSpec {
         return Optional.ofNullable(m_filterHandler);
     }
 
-
-//    /**
-//     * TODO
-//     *
-//     * @since 4.1
-//     */
-//    public <T extends DataValue> DataValueMetaData<T> getMetaData(final Class<T> dataValueClass) {
-//        return m_metaDataManager.getMetaData(dataValueClass);
-//    }
-
-    /**
-     * TODO
-     *
-     * @since 4.1
-     */
-    public MetaData getMetaData() {
+    MetaDataImpl getMetaData() {
         return m_metaDataManager;
     }
+
+    /**
+     * Retrieves the {@link DataValueMetaData} for the {@link DataValue} with class <b>dataValueClass</b>.
+     * An empty {@link Optional} is returned if no {@link DataValueMetaData} is available for <b>dataValueClass</b>.
+     *
+     * @param dataValueClass the type of {@link DataValue} for which the {@link DataValueMetaData} is required
+     * @return the {@link DataValueMetaData} for type <b>dataValueClass</b>
+     * @since 4.1
+     */
+    public <T extends DataValue> Optional<DataValueMetaData<T>> getMetaDataForType(final Class<T> dataValueClass) {
+        return m_metaDataManager.getForType(dataValueClass);
+    }
+
+    /**
+     * Convenience wrapper around {@link DataColumnSpec#getMetaDataForType(Class)} that also casts the {@link DataValueMetaData} to the
+     * expected type <b>expectedMetaDataClass</b>.
+     * An empty {@link Optional} is returned if there is no {@link DataValueMetaData} available for <b>dataValueClass</b>
+     * OR it cannot be casted to <b>expectedMetaDataClass</b>.
+     *
+     * @param dataValueType the type of {@link DataValue} for which the {@link DataValueMetaData} is required
+     * @param expectedMetaDataType the type of {@link DataValueMetaData} that is expected by the client
+     * @return the {@link DataValueMetaData} for <b>dataValueClass</b> casted to the specific type <b>expectedMetaDataClass</b>
+     * @since 4.1
+     */
+    public <T extends DataValue, M extends DataValueMetaData<T>> Optional<M> getMetaDataForType(final Class<T> dataValueType,
+        final Class<M> expectedMetaDataType) {
+        return m_metaDataManager.getForType(dataValueType, expectedMetaDataType);
+    }
+
+
 
     /**
      * Two <code>DataColumnSpec</code>s are equal if they have the same
@@ -323,7 +338,6 @@ public final class DataColumnSpec {
      */
     @Override
     public boolean equals(final Object o) {
-        // TODO add metadata
         if (o == this) {
             return true;
         }
@@ -336,7 +350,8 @@ public final class DataColumnSpec {
             && getType().equals(cspec.getType())
             && getDomain().equals(cspec.getDomain())
             && getProperties().equals(cspec.getProperties())
-            && getElementNames().equals(cspec.getElementNames());
+            && getElementNames().equals(cspec.getElementNames())
+            && getMetaData().equals(cspec.getMetaData());
         return areEqual
                 && Objects.equals(m_colorHandler, cspec.m_colorHandler)
                 && Objects.equals(m_sizeHandler, cspec.m_sizeHandler)
@@ -352,7 +367,6 @@ public final class DataColumnSpec {
      */
     @Override
     public int hashCode() {
-        // TODO metadata?
         return getName().hashCode() ^ getType().hashCode();
     }
 

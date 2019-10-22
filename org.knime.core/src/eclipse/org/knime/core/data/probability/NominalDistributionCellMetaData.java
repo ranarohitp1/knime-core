@@ -58,15 +58,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import org.knime.core.data.DataCell;
-
 /**
  * Holds information shared by multiple {@link ProbabilityDistributionCell ProbabilityDistributionCells} created by the
  * same process e.g. the values the distribution is defined over.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class NominalDistributionMetaData {
+final class NominalDistributionCellMetaData {
 
     private static final MemoryAlertAwareGuavaCache CACHE = new MemoryAlertAwareGuavaCache();
 
@@ -74,11 +72,11 @@ final class NominalDistributionMetaData {
 
     private final UUID m_id;
 
-    NominalDistributionMetaData(final String[] values) {
+    NominalDistributionCellMetaData(final String[] values) {
         this(UUID.randomUUID(), values);
     }
 
-    private NominalDistributionMetaData(final UUID id, final String[] values) {
+    private NominalDistributionCellMetaData(final UUID id, final String[] values) {
         m_id = id;
         Arrays.stream(values).forEach(v -> m_valueMap.put(v, m_valueMap.size()));
     }
@@ -106,15 +104,14 @@ final class NominalDistributionMetaData {
 
     void write(final ObjectOutputStream out) throws IOException {
         out.writeObject(m_id);
-        // TODO how do we use custom serializers for cells
-        out.writeObject(m_valueMap.keySet().toArray(new DataCell[0]));
+        out.writeObject(m_valueMap.keySet().toArray(new String[0]));
     }
 
-    static NominalDistributionMetaData read(final ObjectInputStream in)
+    static NominalDistributionCellMetaData read(final ObjectInputStream in)
         throws ClassNotFoundException, IOException, ExecutionException {
-        // TODO use configs instead of input streams to allow reuse as DataValueMetaData
+        // TODO use configs instead of input streams to allow reuse as DataValueMetaData (means that we would always read the full data)
         final UUID id = (UUID)in.readObject();
-        return CACHE.get(id, () -> new NominalDistributionMetaData(id, (String[])in.readObject()));
+        return CACHE.get(id, () -> new NominalDistributionCellMetaData(id, (String[])in.readObject()));
     }
 
 }

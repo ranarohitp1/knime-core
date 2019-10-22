@@ -118,7 +118,7 @@ public final class DataColumnSpecCreator {
     private String[] m_elementNames;
 
     /**
-     * TODO
+     * Creator for the object managing meta data.
      */
     private MetaDataImpl.Creator m_metaDataCreator;
 
@@ -187,24 +187,33 @@ public final class DataColumnSpecCreator {
     }
 
     /**
-     * TODO
+     * Merges the existing {@link DataColumnSpec} with a second
+     * {@link DataColumnSpec}.
+     * If <b>allowDifferentTypes</b> is set to true, the common supertype of this {@link DataColumnSpecCreator}
+     *  and {@link DataColumnSpec cspec2} is determined, otherwise the types
+     *  must be equal or an {@link IllegalArgumentException} is thrown.
+     * The domain information, meta data and properties from both DataColumnSpecs are merged,
+     * Color, Shape and Size-Handlers are compared (must be equal).
      *
-     * @param cspec2
-     * @param allowDifferentTypes if set to false, varying types are supported and a common super type is determined in
+     * @param cspec2 the second {@link DataColumnSpec}.
+     * @param allowDifferentTypes if set to true, varying types are supported and a common super type is determined in
      *            this case
+     *
+     * @see DataTableSpec#mergeDataTableSpecs(DataTableSpec...)
+     * @throws IllegalArgumentException if the structure (name and depending on <b>allowDifferentTypes</b> type) does
+     *             not match, if the domain or meta data cannot be merged, if the Color-,
+     *             Shape- or SizeHandlers are different or the sub element
+     *             names are not equal.
+     *
      * @since 4.1
      */
     public void merge(final DataColumnSpec cspec2, final boolean allowDifferentTypes) {
         CheckUtils.checkArgument(isCompatible(cspec2, allowDifferentTypes),
             "Structures of DataColumnSpecs do not match.");
-
-        if (!allowDifferentTypes) {
+        if (allowDifferentTypes) {
             updateType(cspec2.getType());
         }
-
         mergeDomains(cspec2.getDomain());
-
-        // TODO verify
         m_metaDataCreator.merge(cspec2.getMetaData());
         mergeColorHandlers(cspec2.getColorHandler());
         mergeShapeHandlers(cspec2.getShapeHandler());
@@ -337,84 +346,7 @@ public final class DataColumnSpecCreator {
      *             names are not equal.
      */
     public void merge(final DataColumnSpec cspec2) {
-        // TODO call other merge method
-        if (!cspec2.getName().equals(m_name)
-                || !cspec2.getType().equals(m_type)) {
-            throw new IllegalArgumentException("Structures of DataColumnSpecs"
-                    + " do not match.");
-        }
-
-        DataColumnDomain domain2 = cspec2.getDomain();
-        boolean hasDomainChanged = false;
-        final Set<DataCell> myValues = m_domain.getValues();
-        final Set<DataCell> oValues = domain2.getValues();
-        Set<DataCell> newValues;
-        if (myValues == null || oValues == null) {
-            newValues = null;
-            hasDomainChanged |= myValues != null;
-        } else if (myValues.equals(oValues)) {
-            newValues = myValues;
-        } else {
-            newValues = new LinkedHashSet<DataCell>(myValues);
-            newValues.addAll(oValues);
-            hasDomainChanged = true;
-        }
-
-        DataValueComparator comparator = m_type.getComparator();
-
-        final DataCell myLower = m_domain.getLowerBound();
-        final DataCell oLower = domain2.getLowerBound();
-        DataCell newLower;
-        if (myLower == null || oLower == null) {
-            newLower = null;
-            hasDomainChanged |= myLower != null;
-        } else if (myLower.equals(oLower)) {
-            newLower = myLower;
-        } else if (comparator.compare(myLower, oLower) > 0) {
-            newLower = oLower;
-            hasDomainChanged = true;
-        } else {
-            newLower = myLower;
-        }
-
-        final DataCell myUpper = m_domain.getUpperBound();
-        final DataCell oUpper = domain2.getUpperBound();
-        DataCell newUpper;
-        if (myUpper == null || oUpper == null) {
-            newUpper = null;
-            hasDomainChanged |= myUpper != null;
-        } else if (myUpper.equals(oUpper)) {
-            newUpper = myUpper;
-        } else if (comparator.compare(myUpper, oUpper) < 0) {
-            newUpper = oUpper;
-            hasDomainChanged = true;
-        } else {
-            newUpper = myUpper;
-        }
-
-        // TODO verify
-        m_metaDataCreator.merge(cspec2.getMetaData());
-
-
-        if (hasDomainChanged) {
-            setDomain(new DataColumnDomain(newLower, newUpper, newValues));
-        }
-
-        // check for redundant color handler
-        mergeColorHandlers(cspec2.getColorHandler());
-
-        // check for redundant shape handler
-        mergeShapeHandlers(cspec2.getShapeHandler());
-
-        // check for redundant size handler
-        mergeSizeHandlers(cspec2.getSizeHandler());
-
-        // check for redundant filter handler
-        mergeFilterHandlers(cspec2.getFilterHandler().orElse(null));
-
-        // merge properties, take intersection
-        mergeProperties(cspec2.getProperties());
-        mergeElementNames(cspec2.getElementNames());
+        merge(cspec2, false);
     }
 
     /**
@@ -543,11 +475,18 @@ public final class DataColumnSpecCreator {
     }
 
     /**
-     * TODO
+     * Adds the provided {@link DataValueMetaData metaData} by either overwriting existing meta data for the
+     * associated DataValue (<b>overwrite</b> set to true)
+     * or merging it with existing meta data (overwrite set to false).
+     *
+     * @param metaData the {@link DataValueMetaData} to add
+     * @param overwrite if set to true, any stored meta data for the type {@link DataValueMetaData metaData}
+     * refers to is ovewritten, otherwise the meta data is merged
+     * (potentially leading to an exception if the merge fails)
      * @since 4.1
      */
-    public void addMetaData(final DataValueMetaData<?> metaData) {
-        m_metaDataCreator.addMetaData(metaData);;
+    public void addMetaData(final DataValueMetaData<?> metaData, final boolean overwrite) {
+        m_metaDataCreator.addMetaData(metaData, overwrite);
     }
 
     /**

@@ -51,6 +51,7 @@ package org.knime.core.data.probability;
 import java.util.LinkedHashSet;
 
 import org.knime.core.data.DataCell;
+import org.knime.core.data.DataValueMetaData;
 import org.knime.core.data.DataValueMetaDataCreator;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
@@ -119,12 +120,32 @@ public final class NominalDistributionValueMetaDataCreator
 
     /**
      * {@inheritDoc}
+     *
      * @throws InvalidSettingsException
      */
     @Override
-    public NominalDistributionValueMetaData load(final ConfigRO config) throws InvalidSettingsException {
+    public NominalDistributionValueMetaData createFromConfig(final ConfigRO config) throws InvalidSettingsException {
         final String[] values = config.getStringArray(DefaultNominalDistributionValueMetaData.CFG_VALUES);
         return new DefaultNominalDistributionValueMetaData(values);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<NominalDistributionValue> getValueType() {
+        return NominalDistributionValue.class;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void merge(final DataValueMetaData<?> other) {
+        CheckUtils.checkState(other instanceof NominalDistributionValueMetaData,
+            "Unsupported meta data object of class %s encountered.", other.getClass().getName());
+        final NominalDistributionValueMetaData metaData = (NominalDistributionValueMetaData)other;
+        metaData.getValues().forEach(m_values::add);
     }
 
 }
