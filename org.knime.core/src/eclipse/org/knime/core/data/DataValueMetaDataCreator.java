@@ -59,7 +59,6 @@ import org.knime.core.node.config.ConfigRO;
  * @since 4.1
  */
 public interface DataValueMetaDataCreator<T extends DataValue> {
-    // TODO could this be typed on DataValueMetaData<?> instead?
 
     /**
      * Updates the meta data according to the contents of cell.</br>

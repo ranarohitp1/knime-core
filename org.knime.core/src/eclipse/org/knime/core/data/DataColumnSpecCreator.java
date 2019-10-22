@@ -346,6 +346,7 @@ public final class DataColumnSpecCreator {
      *             names are not equal.
      */
     public void merge(final DataColumnSpec cspec2) {
+        // TODO discuss! Only called by DataTableSpec#mergeDataTableSpecs (at least in core and base)
         merge(cspec2, false);
     }
 

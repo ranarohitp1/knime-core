@@ -57,8 +57,6 @@ import java.util.stream.Collectors;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataValueMetaData;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.util.CheckUtils;
 
@@ -101,14 +99,6 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
     @Override
     public Set<String> getValues() {
         return Collections.unmodifiableSet(m_values);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void load(final ConfigRO config) throws InvalidSettingsException {
-        m_values = toLinkedHashSet(config.getStringArray(CFG_VALUES));
     }
 
     @Override
