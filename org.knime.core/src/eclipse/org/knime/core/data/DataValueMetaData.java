@@ -48,27 +48,17 @@
  */
 package org.knime.core.data;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 
 /**
  * This interface describes meta data that belongs to a certain type of {@link DataValue}.
  * {@link DataValueMetaData} objects are expected to be immutable (except for the load method).
- * Every implementation must provide a default constructor for serialization.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @param <T> the type of {@link DataValue} this {@link MetaData} belongs to
+ * @param <T> the type of {@link DataValue} this {@link DataValueMetaData} belongs to
  * @since 4.1
  */
 public interface DataValueMetaData<T extends DataValue> {
-
-    /**
-     * Loads the meta data from the {@link ConfigRO config}.
-     * @param config to load from
-     * @throws InvalidSettingsException if the stored config is invalid
-     */
-    void load(final ConfigRO config) throws InvalidSettingsException;
 
     /**
      * Saves the meta data to {@link ConfigWO config}.
@@ -93,30 +83,5 @@ public interface DataValueMetaData<T extends DataValue> {
      * @return a new {@link DataValueMetaData} object that contains the merged information of <b>this</b> and <b>other</b>
      */
     DataValueMetaData<T> merge(DataValueMetaData<?> other);
-
-    /**
-     *
-     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
-     */
-    public interface Serializer <M extends DataValueMetaData<?>> {
-
-        /**
-         * Creates a new {@link DataValueMetaData} object from {@link ConfigRO}.
-         *
-         * @param config the config defining the meta data
-         * @return a new {@link DataValueMetaData} containing the meta data stored in {@link ConfigRO config}
-         * @throws InvalidSettingsException if the meta data in {@link ConfigRO config} is invalid
-         */
-        M load(final ConfigRO config) throws InvalidSettingsException;
-
-        /**
-         * Saves {@link DataValueMetaData metaData} in {@link ConfigWO config}.
-         *
-         * @param metaData to save
-         * @param config to save to
-         */
-        void save(final M metaData, final ConfigWO config);
-
-    }
 
 }
