@@ -104,7 +104,7 @@ public final class DataColumnSpec {
     /** Holds the FilterHandler if one was set or null. */
     private final FilterHandler m_filterHandler;
 
-    private final MetaDataImpl m_metaDataManager;
+    private final MetaDataManager m_metaDataManager;
 
     /** Config key for the column name. */
     private static final String CFG_COLUMN_NAME = "column_name";
@@ -153,7 +153,7 @@ public final class DataColumnSpec {
      */
     DataColumnSpec(final String name, final String[] elNames, final DataType type, final DataColumnDomain domain,
         final DataColumnProperties props, final SizeHandler sizeHdl, final ColorHandler colorHdl,
-        final ShapeHandler shapeHdl, final FilterHandler filterHdl, final MetaDataImpl metaData) {
+        final ShapeHandler shapeHdl, final FilterHandler filterHdl, final MetaDataManager metaData) {
         final String nullError = "Do not init DataColumnSpec with null arguments!";
         List<String> elNamesAsList = Collections.unmodifiableList(
             Arrays.asList(CheckUtils.checkArgumentNotNull(elNames, nullError)));
@@ -271,39 +271,21 @@ public final class DataColumnSpec {
         return Optional.ofNullable(m_filterHandler);
     }
 
-    MetaDataImpl getMetaData() {
+    MetaDataManager getMetaData() {
         return m_metaDataManager;
     }
 
     /**
-     * Retrieves the {@link DataValueMetaData} for the {@link DataValue} with class <b>dataValueClass</b>.
-     * An empty {@link Optional} is returned if no {@link DataValueMetaData} is available for <b>dataValueClass</b>.
+     * Retrieves the {@link MetaData} of class <b>metaDataClass</b>.
+     * An empty {@link Optional} is returned if no {@link MetaData} of class <b>metaDataClass</b> is available.
      *
-     * @param dataValueClass the type of {@link DataValue} for which the {@link DataValueMetaData} is required
-     * @return the {@link DataValueMetaData} for type <b>dataValueClass</b>
+     * @param metaDataClass the type of {@link MetaData} to be retrieved
+     * @return the {@link MetaData} for type <b>metaDataClass</b>
      * @since 4.1
      */
-    public <T extends DataValue> Optional<DataValueMetaData<T>> getMetaDataForType(final Class<T> dataValueClass) {
-        return m_metaDataManager.getForType(dataValueClass);
+    public <M extends MetaData> Optional<M> getMetaDataOfType(final Class<M> metaDataClass) {
+        return m_metaDataManager.getForType(metaDataClass);
     }
-
-    /**
-     * Convenience wrapper around {@link DataColumnSpec#getMetaDataForType(Class)} that also casts the {@link DataValueMetaData} to the
-     * expected type <b>expectedMetaDataClass</b>.
-     * An empty {@link Optional} is returned if there is no {@link DataValueMetaData} available for <b>dataValueClass</b>
-     * OR it cannot be casted to <b>expectedMetaDataClass</b>.
-     *
-     * @param dataValueType the type of {@link DataValue} for which the {@link DataValueMetaData} is required
-     * @param expectedMetaDataType the type of {@link DataValueMetaData} that is expected by the client
-     * @return the {@link DataValueMetaData} for <b>dataValueClass</b> casted to the specific type <b>expectedMetaDataClass</b>
-     * @since 4.1
-     */
-    public <T extends DataValue, M extends DataValueMetaData<T>> Optional<M> getMetaDataForType(final Class<T> dataValueType,
-        final Class<M> expectedMetaDataType) {
-        return m_metaDataManager.getForType(dataValueType, expectedMetaDataType);
-    }
-
-
 
     /**
      * Two <code>DataColumnSpec</code>s are equal if they have the same
@@ -449,12 +431,12 @@ public final class DataColumnSpec {
         if (config.containsKey(CFG_FILTER)) {
             filter = FilterHandler.load(config.getConfig(CFG_FILTER));
         }
-        final MetaDataImpl metaDataManager;
+        final MetaDataManager metaDataManager;
         if (config.containsKey(CFG_META_DATA)) {
-            metaDataManager = MetaDataImpl.load(type, config);
+            metaDataManager = MetaDataManager.load(type, config);
         } else {
             // still create an empty meta data object to avoid issues with NPEs
-            metaDataManager = new MetaDataImpl();
+            metaDataManager = MetaDataManager.EMPTY;
         }
         return new DataColumnSpec(name, elNames, type, domain, properties, size, color, shape, filter, metaDataManager);
     }

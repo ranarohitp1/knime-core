@@ -54,8 +54,8 @@ import javax.swing.Icon;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataValue;
-import org.knime.core.data.DataValueMetaDataCreator;
 import org.knime.core.data.ExtensibleUtilityFactory;
+import org.knime.core.data.MetaDataCreator;
 import org.knime.core.node.util.SharedIcons;
 
 /**
@@ -133,7 +133,7 @@ public interface NominalDistributionValue extends DataValue {
          * {@inheritDoc}
          */
         @Override
-        public DataValueMetaDataCreator<?> getMetaDataCreator() {
+        public MetaDataCreator getMetaDataCreator() {
             return new NominalDistributionValueMetaDataCreator();
         }
 

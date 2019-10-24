@@ -44,84 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 11, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.core.data.probability;
+package org.knime.core.data;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.knime.core.data.DataCell;
-import org.knime.core.data.MetaData;
 import org.knime.core.node.config.ConfigWO;
-import org.knime.core.node.util.CheckUtils;
 
 /**
- * TODO figure out if we could just reuse NominalDistributionMetaData
+ * This interface describes meta data that belongs to a certain type of {@link DataValue}.
+ * {@link MetaData} objects are expected to be immutable (except for the load method).
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @param <T> the type of {@link DataValue} this {@link MetaData} belongs to
  * @since 4.1
  */
-public final class DefaultNominalDistributionValueMetaData implements NominalDistributionValueMetaData {
-
-    static final String CFG_VALUES = "values";
-
-    private Set<String> m_values;
+public interface MetaData {
 
     /**
-     * Framework constructor.
-     * @noreference This constructor is not intended to be referenced by clients.
+     * Saves the meta data to {@link ConfigWO config}.
+     * @param config to save to
      */
-    public DefaultNominalDistributionValueMetaData() {
+    void save(final ConfigWO config);
 
-    }
+//    /**
+//     * @return the {@link DataValue} type this meta data belongs to
+//     */
+//    Class<T> getValueType();
 
-    public DefaultNominalDistributionValueMetaData(final String[] values) {
-        m_values = toLinkedHashSet(values);
-    }
-
-    DefaultNominalDistributionValueMetaData(final Collection<String> values) {
-        m_values = new LinkedHashSet<>(values);
-    }
-
-    private DefaultNominalDistributionValueMetaData(final LinkedHashSet<String> values) {
-        m_values = values;
-    }
-
-    private static <T> LinkedHashSet<T> toLinkedHashSet(final T[] values) {
-        return Arrays.stream(values).collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    @Override
-    public Set<String> getValues() {
-        return Collections.unmodifiableSet(m_values);
-    }
-
-    @Override
-    public void save(final ConfigWO config) {
-        config.addDataCellArray(CFG_VALUES, m_values.toArray(new DataCell[0]));
-    }
-
-    @Override
-    public NominalDistributionValueMetaData merge(final MetaData other) {
-        // TODO informative error message
-        CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaData, "Incompatible meta data type %s",
-            other.getClass());
-        final NominalDistributionValueMetaData otherMeta = (NominalDistributionValueMetaData)other;
-        if (other == this) {
-            return this;
-        } else if (m_values.equals(otherMeta.getValues())) {
-            return this;
-        } else {
-            final LinkedHashSet<String> mergedValues = new LinkedHashSet<>();
-            mergedValues.addAll(m_values);
-            mergedValues.addAll(otherMeta.getValues());
-            return new DefaultNominalDistributionValueMetaData(mergedValues);
-        }
-    }
+    /**
+     * Merges the contents of <b>this</b> and <b>other</b> to create a new(!) {@link MetaData} object.
+     * This method should not modify <b>this</b> or <b>other</b>.
+     *
+     * Note: Implementing classes must ensure that <b>other</b> has the correct value type i.e.
+     * <code>other.getValueType().equals(this.getValueType())</code>.
+     *
+     * @param other the {@link MetaData} to merge with
+     * @return a new {@link MetaData} object that contains the merged information of <b>this</b> and <b>other</b>
+     */
+    MetaData merge(MetaData other);
 
 }

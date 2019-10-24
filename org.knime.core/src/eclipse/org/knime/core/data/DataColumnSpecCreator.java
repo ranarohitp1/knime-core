@@ -120,7 +120,7 @@ public final class DataColumnSpecCreator {
     /**
      * Creator for the object managing meta data.
      */
-    private MetaDataImpl.Creator m_metaDataCreator;
+    private MetaDataManager.Creator m_metaDataCreator;
 
     /**
      * Counter that is used when the setName() method is called with an
@@ -144,7 +144,7 @@ public final class DataColumnSpecCreator {
         setType(type);
         setDomain(new DataColumnDomain(null, null, null));
         setProperties(new DataColumnProperties());
-        m_metaDataCreator = new MetaDataImpl.Creator();
+        m_metaDataCreator = new MetaDataManager.Creator();
     }
 
     /**
@@ -172,7 +172,7 @@ public final class DataColumnSpecCreator {
         m_colorHandler = cspec.getColorHandler();
         // property filter
         m_filterHandler = cspec.getFilterHandler().orElse(null);
-        m_metaDataCreator = new MetaDataImpl.Creator(cspec.getMetaData());
+        m_metaDataCreator = new MetaDataManager.Creator(cspec.getMetaData());
     }
 
     private void updateType(final DataType other) {
@@ -476,19 +476,21 @@ public final class DataColumnSpecCreator {
     }
 
     /**
-     * Adds the provided {@link DataValueMetaData metaData} by either overwriting existing meta data for the
+     * Adds the provided {@link MetaData metaData} by either overwriting existing meta data for the
      * associated DataValue (<b>overwrite</b> set to true)
      * or merging it with existing meta data (overwrite set to false).
      *
-     * @param metaData the {@link DataValueMetaData} to add
-     * @param overwrite if set to true, any stored meta data for the type {@link DataValueMetaData metaData}
+     * @param metaData the {@link MetaData} to add
+     * @param overwrite if set to true, any stored meta data for the type {@link MetaData metaData}
      * refers to is ovewritten, otherwise the meta data is merged
      * (potentially leading to an exception if the merge fails)
      * @since 4.1
      */
-    public void addMetaData(final DataValueMetaData<?> metaData, final boolean overwrite) {
+    public void addMetaData(final MetaData metaData, final boolean overwrite) {
         m_metaDataCreator.addMetaData(metaData, overwrite);
     }
+
+    // TODO methods for removing individual and all meta data
 
     /**
      * Returns the {@link DataType} of this {@link DataColumnSpecCreator}.

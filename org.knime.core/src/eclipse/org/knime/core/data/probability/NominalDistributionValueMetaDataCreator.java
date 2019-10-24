@@ -51,8 +51,8 @@ package org.knime.core.data.probability;
 import java.util.LinkedHashSet;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.DataValueMetaData;
-import org.knime.core.data.DataValueMetaDataCreator;
+import org.knime.core.data.MetaData;
+import org.knime.core.data.MetaDataCreator;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.util.CheckUtils;
@@ -64,7 +64,7 @@ import org.knime.core.node.util.CheckUtils;
  * @since 4.1
  */
 public final class NominalDistributionValueMetaDataCreator
-    implements DataValueMetaDataCreator<NominalDistributionValue> {
+    implements MetaDataCreator {
 
     private final LinkedHashSet<String> m_values;
 
@@ -102,7 +102,7 @@ public final class NominalDistributionValueMetaDataCreator
      * {@inheritDoc}
      */
     @Override
-    public DataValueMetaDataCreator<NominalDistributionValue> copy() {
+    public MetaDataCreator copy() {
         return new NominalDistributionValueMetaDataCreator(m_values);
     }
 
@@ -110,7 +110,7 @@ public final class NominalDistributionValueMetaDataCreator
      * {@inheritDoc}
      */
     @Override
-    public void merge(final DataValueMetaDataCreator<?> other) {
+    public void merge(final MetaDataCreator other) {
         CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaDataCreator,
             "Can only merge with NominalDistributionValueMetaDataCreator but received object of type %s.",
             other.getClass().getName());
@@ -129,19 +129,12 @@ public final class NominalDistributionValueMetaDataCreator
         return new DefaultNominalDistributionValueMetaData(values);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Class<NominalDistributionValue> getValueType() {
-        return NominalDistributionValue.class;
-    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void merge(final DataValueMetaData<?> other) {
+    public void merge(final MetaData other) {
         CheckUtils.checkState(other instanceof NominalDistributionValueMetaData,
             "Unsupported meta data object of class %s encountered.", other.getClass().getName());
         final NominalDistributionValueMetaData metaData = (NominalDistributionValueMetaData)other;

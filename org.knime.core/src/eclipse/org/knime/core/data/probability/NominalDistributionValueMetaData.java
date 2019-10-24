@@ -51,7 +51,7 @@ package org.knime.core.data.probability;
 import java.util.Set;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.DataValueMetaData;
+import org.knime.core.data.MetaData;
 
 /**
  * TODO
@@ -59,7 +59,7 @@ import org.knime.core.data.DataValueMetaData;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface NominalDistributionValueMetaData extends DataValueMetaData<NominalDistributionValue> {
+public interface NominalDistributionValueMetaData extends MetaData {
 
     /**
      * The returned set is guaranteed to have a fixed order.

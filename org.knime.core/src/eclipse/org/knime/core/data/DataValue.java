@@ -175,15 +175,13 @@ public interface DataValue {
         }
 
         /**
-         * TODO discuss with Bernd
-         *
-         * This method indicates whether a {@link DataValue} has some meta data associated
-         * with it (see NominalDistributionValue for an example).
+         * This method indicates whether a {@link DataValue} has meta data associated
+         * with it (see NominalDistributionValue for an example). </br>
          *
          * In case this method returns true, {@link UtilityFactory#getMetaDataCreator()} must
-         * return a non-null {@link DataValueMetaDataCreator} instance.
+         * return a non-null {@link MetaDataCreator} instance.
          *
-         * @return true if this {@link DataValue} has some meta data
+         * @return true if this {@link DataValue} has meta data
          * @since 4.1
          */
         public boolean hasMetaData() {
@@ -191,16 +189,17 @@ public interface DataValue {
         }
 
         /**
-         * Creates a {@link DataValueMetaDataCreator} that can create meta data for this {@link DataValue}
+         * Creates a {@link MetaDataCreator} that can create meta data for this {@link DataValue}
          * from actual data. </br>
          *
-         * In case this {@link DataValue} doesn't have any meta data, this method can just return null.
+         * In case this {@link DataValue} doesn't have meta data, this method can just return null.
          *
-         * @return a new {@link DataValueMetaDataCreator}
+         * @return a new {@link MetaDataCreator}
          * @since 4.1
          */
-        public DataValueMetaDataCreator<?> getMetaDataCreator() {
+        public MetaDataCreator getMetaDataCreator() {
             throw new IllegalStateException("This data value has no meta data.");
         }
+
     }
 }

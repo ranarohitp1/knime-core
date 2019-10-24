@@ -52,7 +52,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataValueMetaData;
+import org.knime.core.data.MetaData;
 import org.knime.core.data.renderer.AbstractDataValueRendererFactory;
 import org.knime.core.data.renderer.DataValueRenderer;
 import org.knime.core.data.renderer.DefaultDataValueRenderer;
@@ -99,8 +99,8 @@ public final class NominalDistributionValueRenderer extends DefaultDataValueRend
 
     private NominalDistributionValueMetaData getMetaData() {
         final DataColumnSpec spec = getColSpec();
-        final DataValueMetaData<NominalDistributionValue> metaData =
-            spec.getMetaDataForType(NominalDistributionValue.class)
+        final MetaData metaData =
+            spec.getMetaDataOfType(NominalDistributionValueMetaData.class)
                 .orElseThrow(() -> new IllegalStateException("No meta data available."));
         CheckUtils.checkState(metaData instanceof NominalDistributionValueMetaData,
             "The meta data of a NominalDistributionValue must be of type %s but was of type %s instead.",

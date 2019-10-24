@@ -56,16 +56,16 @@ import org.knime.core.data.DataValue.UtilityFactory;
 
 /**
  * Calculates meta data from actual data by creating meta data corresponding to the presented rows. This is done by
- * retrieving the {@link DataValueMetaDataCreator creators} for all {@link DataValue} interfaces the {@link DataType} of
- * the current column contains that declare that they have {@link DataValueMetaData}. A {@link DataValue} has
- * {@link DataValueMetaData} if its {@link UtilityFactory} returns true in {@link UtilityFactory#hasMetaData()} in which
- * case {@link UtilityFactory#getMetaDataCreator()} must return an instance of {@link DataValueMetaDataCreator}.
+ * retrieving the {@link MetaDataCreator creators} for all {@link DataValue} interfaces the {@link DataType} of
+ * the current column contains that declare that they have {@link MetaData}. A {@link DataValue} has {@link MetaData} if
+ * its {@link UtilityFactory} returns true in {@link UtilityFactory#hasMetaData()} in which case
+ * {@link UtilityFactory#getMetaDataCreator()} must return an instance of {@link MetaDataCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class MetaDataCalculator {
 
-    private final List<DataValueMetaDataCreator<?>> m_metaDataCreators;
+    private final List<MetaDataCreator> m_metaDataCreators;
 
     MetaDataCalculator(final DataType type) {
         m_metaDataCreators = type.getValueClasses().stream().map(DataType::getUtilityFor)
@@ -76,36 +76,36 @@ final class MetaDataCalculator {
         m_metaDataCreators = spec.getType().getValueClasses().stream().map(DataType::getUtilityFor)
             .filter(UtilityFactory::hasMetaData).map(UtilityFactory::getMetaDataCreator).collect(Collectors.toList());
         if (initializeWithSpec) {
-            m_metaDataCreators.forEach(
-                m -> m.merge(spec.getMetaDataForType(m.getValueType()).orElseThrow(() -> new IllegalStateException(
-                    String.format("No meta data for type %s in column %s.", m.getValueType(), spec)))));
+            m_metaDataCreators.forEach(m -> m.merge(spec.getMetaDataOfType((Class<? extends MetaData>)m.getClass())
+                .orElseThrow(() -> new IllegalStateException(
+                    String.format("No meta data for type %s in column %s.", m.getClass(), spec)))));
         }
     }
 
     /**
-     * Copies <b>toCopy</b> by also copying all {@link DataValueMetaDataCreator DataValueMetaDataCreators} it contains.
+     * Copies <b>toCopy</b> by also copying all {@link MetaDataCreator DataValueMetaDataCreators} it contains.
      * This means that any later change to <b>toCopy</b> does NOT affect the newly created instance.
      *
      * @param toCopy the MetaDataCalculator to copy
      */
     MetaDataCalculator(final MetaDataCalculator toCopy) {
         m_metaDataCreators =
-            toCopy.m_metaDataCreators.stream().map(DataValueMetaDataCreator::copy).collect(Collectors.toList());
+            toCopy.m_metaDataCreators.stream().map(MetaDataCreator::copy).collect(Collectors.toList());
     }
 
     void update(final DataCell cell) {
         m_metaDataCreators.forEach(c -> c.update(cell));
     }
 
-    List<DataValueMetaData<?>> createMetaData() {
-        return m_metaDataCreators.stream().map(DataValueMetaDataCreator::create).collect(Collectors.toList());
+    List<MetaData> createMetaData() {
+        return m_metaDataCreators.stream().map(MetaDataCreator::create).collect(Collectors.toList());
     }
 
     void merge(final MetaDataCalculator other) {
-        final Iterator<DataValueMetaDataCreator<?>> otherCreators = other.m_metaDataCreators.iterator();
-        for (DataValueMetaDataCreator<?> creator : m_metaDataCreators) {
+        final Iterator<MetaDataCreator> otherCreators = other.m_metaDataCreators.iterator();
+        for (MetaDataCreator creator : m_metaDataCreators) {
             assert otherCreators.hasNext();
-            final DataValueMetaDataCreator<?> otherCreator = otherCreators.next();
+            final MetaDataCreator otherCreator = otherCreators.next();
             assert creator.getClass().equals(otherCreator.getClass());
             creator.merge(otherCreator);
         }

@@ -52,13 +52,12 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 
 /**
- * Allows to create {@link DataValueMetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
+ * Allows to create {@link MetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @param <T> the type of {@link DataValue} the created {@link DataValueMetaData} refers to
  * @since 4.1
  */
-public interface DataValueMetaDataCreator<T extends DataValue> {
+public interface MetaDataCreator {
 
     /**
      * Updates the meta data according to the contents of cell.</br>
@@ -70,29 +69,24 @@ public interface DataValueMetaDataCreator<T extends DataValue> {
     void update(final DataCell cell);
 
     /**
-     * Creates the {@link DataValueMetaData} corresponding to the current state of this creator.</br>
+     * Creates the {@link MetaData} corresponding to the current state of this creator.</br>
      * It must be possible to call this method multiple times even if the creator is still updated and
-     * {@link DataValueMetaData metaData objects} created in different calls must be independent from each other
+     * {@link MetaData metaData objects} created in different calls must be independent from each other
      * i.e. they may not share any mutable objects.
      *
-     * @return the {@link DataValueMetaData} containing the meta data at the current state of this creator
+     * @return the {@link MetaData} containing the meta data at the current state of this creator
      */
-    DataValueMetaData<T> create();
+    MetaData create();
 
     /**
-     * Creates a {@link DataValueMetaData} from a stored {@link ConfigRO config}.
+     * Creates a {@link MetaData} from a stored {@link ConfigRO config}.
      * This is used during serialization of {@link DataColumnSpec} objects.
      *
      * @param config containing the necessary meta data
-     * @return the {@link DataValueMetaData} containing the meta data stored in {@link ConfigRO config}
+     * @return the {@link MetaData} containing the meta data stored in {@link ConfigRO config}
      * @throws InvalidSettingsException if the data stored in {@link ConfigRO config} is invalid
      */
-    DataValueMetaData<T> createFromConfig(final ConfigRO config) throws InvalidSettingsException;
-
-    /**
-     * @return the {@link DataValue} type the {@link DataValueMetaData} created by this instance refers to
-     */
-    Class<T> getValueType();
+    MetaData createFromConfig(final ConfigRO config) throws InvalidSettingsException;
 
     /**
      * Creates a deep copy of this creator i.e. calling update on the copied creator
@@ -100,22 +94,22 @@ public interface DataValueMetaDataCreator<T extends DataValue> {
      *
      * @return a deep copy of this creator
      */
-    DataValueMetaDataCreator<T> copy();
+    MetaDataCreator copy();
 
     /**
-     * Merges two {@link DataValueMetaDataCreator creators} by including the data
+     * Merges two {@link MetaDataCreator creators} by including the data
      * from <b>other</b> into this creator.
      *
      * @param other the creator to merge into this creator
      */
-    default void merge(final DataValueMetaDataCreator<?> other) {
+    default void merge(final MetaDataCreator other) {
         merge(other.create());
     }
 
     /**
-     * Merges the information from {@link DataValueMetaData other} into this creator.
+     * Merges the information from {@link MetaData other} into this creator.
      *
-     * @param other the {@link DataValueMetaData} to merge into this creator
+     * @param other the {@link MetaData} to merge into this creator
      */
-    void merge(final DataValueMetaData<?> other);
+    void merge(final MetaData other);
 }

@@ -48,7 +48,6 @@
  */
 package org.knime.core.data;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,82 +59,57 @@ import org.knime.core.data.DataValue.UtilityFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
-import org.knime.core.node.util.CheckUtils;
 
 /**
- * Manages {@link MetaData} for a {@link DataColumnSpec}. Currently, only {@link DataValueMetaData} is supported.
+ * Manages {@link MetaData} for a {@link DataColumnSpec}. Currently, only {@link MetaData} is supported.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class MetaDataImpl {
+final class MetaDataManager {
 
-    private final Map<Class<? extends DataValue>, DataValueMetaData<?>> m_valueMetaDataMap;
+    private final Map<Class<? extends MetaData>, MetaData> m_valueMetaDataMap;
 
-    static final MetaDataImpl EMPTY = new MetaDataImpl(Collections.emptyMap());
+    static final MetaDataManager EMPTY = new MetaDataManager(Collections.emptyMap());
 
-    MetaDataImpl() {
-        m_valueMetaDataMap = new HashMap<>();
-    }
-
-    private MetaDataImpl(final Map<Class<? extends DataValue>, DataValueMetaData<?>> valueMetaDataMap) {
+    private MetaDataManager(final Map<Class<? extends MetaData>, MetaData> valueMetaDataMap) {
         m_valueMetaDataMap = valueMetaDataMap;
     }
 
-    public <T extends DataValue> Optional<DataValueMetaData<T>> getForType(final Class<T> dataValueClass) {
-        final DataValueMetaData<?> wildCardMetaData = m_valueMetaDataMap.get(dataValueClass);
+    <M extends MetaData> Optional<M>
+        getForType(final Class<M> metaDataClass) {
+        final MetaData wildCardMetaData = m_valueMetaDataMap.get(metaDataClass);
         if (wildCardMetaData == null) {
             return Optional.empty();
         }
-        CheckUtils.checkState(dataValueClass.equals(wildCardMetaData.getValueType()), "Illegal mapping detected.");
         @SuppressWarnings("unchecked") // the check above ensures that wildCardMetaData
-        // is indeed of type DataValueMetaData<T>
-        final DataValueMetaData<T> typedMetaData = (DataValueMetaData<T>)wildCardMetaData;
+        // is indeed of type MetaData<T>
+        final M typedMetaData = (M)wildCardMetaData;
         return Optional.of(typedMetaData);
-    }
-
-    public <T extends DataValue, M extends DataValueMetaData<T>> Optional<M> getForType(final Class<T> dataValueType,
-        final Class<M> expectedMetaDataType) {
-        final Optional<DataValueMetaData<T>> typedMetaData = getForType(dataValueType);
-        return typedMetaData.flatMap(m -> castIfPresent(m, expectedMetaDataType));
-    }
-
-    private static <T extends DataValue, M extends DataValueMetaData<T>> Optional<M>
-        castIfPresent(final DataValueMetaData<T> metaData, final Class<M> expectedMetaDataClass) {
-        if (expectedMetaDataClass.isAssignableFrom(metaData.getClass())) {
-            @SuppressWarnings("unchecked") // checked at runtime
-            final M specificMetaData = (M)metaData;
-            return Optional.of(specificMetaData);
-        } else {
-            return Optional.empty();
-        }
     }
 
     void save(final ConfigWO config) {
         m_valueMetaDataMap.forEach((k, v) -> v.save(config.addConfig(k.getCanonicalName())));
     }
 
-    static MetaDataImpl load(final DataType type, final ConfigRO config) throws InvalidSettingsException {
-        final Map<Class<? extends DataValue>, DataValueMetaData<?>> valueMetaDataMap = new HashMap<>();
+    static MetaDataManager load(final DataType type, final ConfigRO config) throws InvalidSettingsException {
+        final Map<Class<? extends MetaData>, MetaData> valueMetaDataMap = new HashMap<>();
         for (Class<? extends DataValue> valueClass : type.getValueClasses()) {
             final UtilityFactory utilityFactory = DataType.getUtilityFor(valueClass);
             if (!utilityFactory.hasMetaData()) {
                 // this DataValue class has no associated meta data
                 continue;
             }
-            final DataValueMetaDataCreator<?> creator = utilityFactory.getMetaDataCreator();
-            valueMetaDataMap.put(valueClass, creator.createFromConfig(config.getConfig(valueClass.getCanonicalName())));
+            final MetaDataCreator creator = utilityFactory.getMetaDataCreator();
+            final MetaData metaData = creator.createFromConfig(config.getConfig(valueClass.getCanonicalName()));
+            valueMetaDataMap.put(metaData.getClass(), metaData);
         }
-        return new MetaDataImpl(valueMetaDataMap);
+        return new MetaDataManager(valueMetaDataMap);
     }
 
-    MetaDataImpl merge(final MetaDataImpl other) {
+    MetaDataManager merge(final MetaDataManager other) {
         final Creator creator = new Creator(this);
         creator.merge(other);
         return creator.create();
-    }
-
-    private Collection<DataValueMetaData<?>> getAllMetaData() {
-        return m_valueMetaDataMap.values();
     }
 
     /**
@@ -146,6 +120,7 @@ final class MetaDataImpl {
         return m_valueMetaDataMap.equals(obj);
     }
 
+
     /**
      * {@inheritDoc}
      */
@@ -155,32 +130,32 @@ final class MetaDataImpl {
     }
 
     static final class Creator {
-        private final Map<Class<? extends DataValue>, DataValueMetaData<?>> m_valueMetaDataMap;
+        private final Map<Class<? extends MetaData>, MetaData> m_valueMetaDataMap;
 
         Creator() {
             m_valueMetaDataMap = new HashMap<>();
         }
 
-        Creator(final MetaDataImpl metaData) {
-            m_valueMetaDataMap = metaData.getAllMetaData().stream()
-                .collect(Collectors.toMap(DataValueMetaData::getValueType, Function.identity()));
+        Creator(final MetaDataManager metaData) {
+            m_valueMetaDataMap = metaData.m_valueMetaDataMap.values().stream()
+                .collect(Collectors.toMap(MetaData::getClass, Function.identity()));
         }
 
-        void addMetaData(final DataValueMetaData<?> metaData, final boolean overwrite) {
+        void addMetaData(final MetaData metaData, final boolean overwrite) {
             if (overwrite) {
-                m_valueMetaDataMap.put(metaData.getValueType(), metaData);
+                m_valueMetaDataMap.put(metaData.getClass(), metaData);
             } else {
-                m_valueMetaDataMap.merge(metaData.getValueType(), metaData, (m1, m2) -> m1.merge(m2));
+                m_valueMetaDataMap.merge(metaData.getClass(), metaData, (m1, m2) -> m1.merge(m2));
             }
         }
 
-        void merge(final MetaDataImpl metaData) {
-            metaData.getAllMetaData()
-                .forEach(m -> m_valueMetaDataMap.merge(m.getValueType(), m, (m1, m2) -> m1.merge(m2)));
+        void merge(final MetaDataManager metaData) {
+            metaData.m_valueMetaDataMap.values()
+                .forEach(m -> m_valueMetaDataMap.merge(m.getClass(), m, (m1, m2) -> m1.merge(m2)));
         }
 
-        MetaDataImpl create() {
-            return new MetaDataImpl(new HashMap<>(m_valueMetaDataMap));
+        MetaDataManager create() {
+            return new MetaDataManager(new HashMap<>(m_valueMetaDataMap));
         }
     }
 

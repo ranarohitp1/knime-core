@@ -44,44 +44,41 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 11, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 23, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data;
 
-import org.knime.core.node.config.ConfigWO;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
+import java.util.Optional;
+
+import org.junit.Test;
 
 /**
- * This interface describes meta data that belongs to a certain type of {@link DataValue}.
- * {@link DataValueMetaData} objects are expected to be immutable (except for the load method).
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @param <T> the type of {@link DataValue} this {@link DataValueMetaData} belongs to
- * @since 4.1
  */
-public interface DataValueMetaData<T extends DataValue> {
+public class MetaDataManagerTest {
 
-    /**
-     * Saves the meta data to {@link ConfigWO config}.
-     * @param config to save to
-     */
-    void save(final ConfigWO config);
+    private static <T extends DataValue> MetaData createMetaData(final Class<T> valueClass) {
+        return mock(MetaData.class);
+    }
 
-    /**
-     * @return the {@link DataValue} type this meta data belongs to
-     */
-    Class<T> getValueType();
+    @Test
+    public void testCreation() throws Exception {
+        final MetaDataManager.Creator creator = new MetaDataManager.Creator();
+        final MetaData metaData = createMetaData(DataValue.class);
+        creator.addMetaData(metaData, false);
+        final MetaDataManager mngr = creator.create();
+        final Optional<? extends MetaData> optionalMetaData = mngr.getForType(metaData.getClass());
+        assertTrue(optionalMetaData.isPresent());
+        assertEquals(metaData, optionalMetaData.get());
+    }
 
-    /**
-     * TODO
-     * Merges the contents of <b>this</b> and <b>other</b> to create a new(!) {@link DataValueMetaData} object.
-     * This method should not modify <b>this</b> or <b>other</b>.
-     *
-     * Note: Implementing classes must ensure that <b>other</b> has the correct value type i.e.
-     * <code>other.getValueType().equals(this.getValueType())</code>.
-     *
-     * @param other the {@link DataValueMetaData} to merge with
-     * @return a new {@link DataValueMetaData} object that contains the merged information of <b>this</b> and <b>other</b>
-     */
-    DataValueMetaData<T> merge(DataValueMetaData<?> other);
-
+    @Test
+    public void testCreatorAddMetaDataOverwrite() throws Exception {
+        final MetaData first = createMetaData(DataValue.class);
+    }
 }
