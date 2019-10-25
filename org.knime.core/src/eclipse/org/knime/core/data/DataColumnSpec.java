@@ -134,6 +134,7 @@ public final class DataColumnSpec {
     /** Config key for the FilterHandler. */
     private static final String CFG_FILTER = "filter_handler";
 
+    /** Config key for the MetaData. */
     private static final String CFG_META_DATA = "meta_data";
 
     /**
@@ -434,7 +435,7 @@ public final class DataColumnSpec {
         }
         final MetaDataManager metaDataManager;
         if (config.containsKey(CFG_META_DATA)) {
-            metaDataManager = MetaDataManager.load(type, config);
+            metaDataManager = MetaDataManager.load(config);
         } else {
             // still create an empty meta data object to avoid issues with NPEs
             metaDataManager = MetaDataManager.EMPTY;

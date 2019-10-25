@@ -42,7 +42,7 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- * 
+ *
  * History
  *   Oct 25, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
@@ -55,6 +55,7 @@ import org.knime.core.data.meta.MetaDataCreatorFactory;
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @since 4.1
  */
 public final class NominalDistributionValueMetaDataCreatorFactory implements MetaDataCreatorFactory {
 

@@ -93,7 +93,7 @@ public final class NominalDistributionValueMetaDataCreator
      */
     @Override
     public NominalDistributionValueMetaData create() {
-        return new DefaultNominalDistributionValueMetaData(m_values);
+        return new NominalDistributionValueMetaData(m_values);
     }
 
     /**

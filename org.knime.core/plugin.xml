@@ -669,8 +669,8 @@
          point="org.knime.core.MetaDataType">
       <MetaData
             creatorFactory="org.knime.core.data.probability.NominalDistributionValueMetaDataCreatorFactory"
-            metaData="org.knime.core.data.probability.DefaultNominalDistributionValueMetaData"
-            serializer="org.knime.core.data.probability.DefaultNominalDistributionValueMetaData$DefaultNominalDistributionValueMetaDataSerializer">
+            metaData="org.knime.core.data.probability.NominalDistributionValueMetaData"
+            serializer="org.knime.core.data.probability.NominalDistributionValueMetaData$NominalDistributionValueMetaDataSerializer">
       </MetaData>
    </extension>
 </plugin>

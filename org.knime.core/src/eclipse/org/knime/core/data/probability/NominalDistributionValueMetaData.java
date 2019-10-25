@@ -44,28 +44,113 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 9, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data.probability;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.MetaDataSerializer;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
+import org.knime.core.node.config.ConfigWO;
+import org.knime.core.node.util.CheckUtils;
 
 /**
- * TODO
+ * TODO figure out if we could just reuse NominalDistributionMetaData
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface NominalDistributionValueMetaData extends MetaData {
+public final class NominalDistributionValueMetaData implements MetaData {
+
+    static final String CFG_VALUES = "values";
+
+    private Set<String> m_values;
+
+    public NominalDistributionValueMetaData(final String[] values) {
+        m_values = toLinkedHashSet(values);
+    }
+
+    NominalDistributionValueMetaData(final Collection<String> values) {
+        m_values = new LinkedHashSet<>(values);
+    }
+
+    private NominalDistributionValueMetaData(final LinkedHashSet<String> values) {
+        m_values = values;
+    }
+
+    private static <T> LinkedHashSet<T> toLinkedHashSet(final T[] values) {
+        return Arrays.stream(values).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
 
     /**
      * The returned set is guaranteed to have a fixed order.
      *
      * @return the {@link DataCell values} this distribution is defined over
      */
-    Set<String> getValues();
+    public Set<String> getValues() {
+        return Collections.unmodifiableSet(m_values);
+    }
+
+    @Override
+    public void save(final ConfigWO config) {
+        config.addDataCellArray(CFG_VALUES, m_values.toArray(new DataCell[0]));
+    }
+
+    @Override
+    public NominalDistributionValueMetaData merge(final MetaData other) {
+        // TODO informative error message
+        CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaData, "Incompatible meta data type %s",
+            other.getClass());
+        final NominalDistributionValueMetaData otherMeta = (NominalDistributionValueMetaData)other;
+        if (other == this) {
+            return this;
+        } else if (m_values.equals(otherMeta.getValues())) {
+            return this;
+        } else {
+            final LinkedHashSet<String> mergedValues = new LinkedHashSet<>();
+            mergedValues.addAll(m_values);
+            mergedValues.addAll(otherMeta.getValues());
+            return new NominalDistributionValueMetaData(mergedValues);
+        }
+    }
+
+    /**
+     * Serializer for {@link NominalDistributionValueMetaData} objects.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public static final class NominalDistributionValueMetaDataSerializer implements MetaDataSerializer {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void save(final MetaData metaData, final ConfigWO config) {
+            CheckUtils.checkState(metaData instanceof NominalDistributionValueMetaData,
+                "Unexpected meta data type '%s' encountered.", metaData.getClass().getName());
+            final NominalDistributionValueMetaData meta = (NominalDistributionValueMetaData)metaData;
+            config.addDataCellArray(CFG_VALUES, meta.m_values.toArray(new DataCell[0]));
+        }
+
+        /**
+         * {@inheritDoc}
+         * @throws InvalidSettingsException
+         */
+        @Override
+        public MetaData load(final ConfigRO config) throws InvalidSettingsException {
+            final String[] values = config.getStringArray(CFG_VALUES);
+            return new NominalDistributionValueMetaData(values);
+        }
+
+    }
 
 }

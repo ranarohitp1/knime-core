@@ -93,7 +93,7 @@ final class MetaDataManager {
         m_valueMetaDataMap.forEach((k, v) -> MetaDataRegistry.INSTANCE.getSerializer(k).save(v, config));
     }
 
-    static MetaDataManager load(final DataType type, final ConfigRO config) throws InvalidSettingsException {
+    static MetaDataManager load(final ConfigRO config) throws InvalidSettingsException {
         final Map<Class<? extends MetaData>, MetaData> metaDataMap = new HashMap<>();
 
         for (String key : config) {
