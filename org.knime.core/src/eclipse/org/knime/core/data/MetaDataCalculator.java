@@ -48,11 +48,15 @@
  */
 package org.knime.core.data;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.knime.core.data.DataValue.UtilityFactory;
+import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.MetaDataCreator;
+import org.knime.core.data.meta.MetaDataRegistry;
 
 /**
  * Calculates meta data from actual data by creating meta data corresponding to the presented rows. This is done by
@@ -65,18 +69,16 @@ import org.knime.core.data.DataValue.UtilityFactory;
  */
 final class MetaDataCalculator {
 
-    private final List<MetaDataCreator> m_metaDataCreators;
+    private final Collection<MetaDataCreator> m_metaDataCreators;
 
     MetaDataCalculator(final DataType type) {
-        m_metaDataCreators = type.getValueClasses().stream().map(DataType::getUtilityFor)
-            .filter(UtilityFactory::hasMetaData).map(UtilityFactory::getMetaDataCreator).collect(Collectors.toList());
+        m_metaDataCreators = MetaDataRegistry.INSTANCE.getCreators(type);
     }
 
     MetaDataCalculator(final DataColumnSpec spec, final boolean initializeWithSpec) {
-        m_metaDataCreators = spec.getType().getValueClasses().stream().map(DataType::getUtilityFor)
-            .filter(UtilityFactory::hasMetaData).map(UtilityFactory::getMetaDataCreator).collect(Collectors.toList());
+        this(spec.getType());
         if (initializeWithSpec) {
-            m_metaDataCreators.forEach(m -> m.merge(spec.getMetaDataOfType((Class<? extends MetaData>)m.getClass())
+            m_metaDataCreators.forEach(m -> m.merge(spec.getMetaDataOfType(m.getClass().asSubclass(MetaData.class))
                 .orElseThrow(() -> new IllegalStateException(
                     String.format("No meta data for type %s in column %s.", m.getClass(), spec)))));
         }

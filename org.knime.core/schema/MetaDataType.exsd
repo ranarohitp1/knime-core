@@ -3,7 +3,7 @@
 <schema targetNamespace="org.knime.core" xmlns="http://www.w3.org/2001/XMLSchema">
 <annotation>
       <appInfo>
-         <meta.schema plugin="org.knime.core" id="DataValueMetaData" name="DataValueMetaData"/>
+         <meta.schema plugin="org.knime.core" id="MetaDataType" name="MetaDataType"/>
       </appInfo>
       <documentation>
          [Enter description of this extension point.]
@@ -17,6 +17,9 @@
          </appInfo>
       </annotation>
       <complexType>
+         <sequence minOccurs="1" maxOccurs="unbounded">
+            <element ref="MetaData"/>
+         </sequence>
          <attribute name="point" type="string" use="required">
             <annotation>
                <documentation>
@@ -44,40 +47,40 @@
       </complexType>
    </element>
 
-   <element name="dataValueMetaData">
+   <element name="MetaData">
       <annotation>
          <documentation>
             Registers custom meta data for a particular data value type.
          </documentation>
       </annotation>
       <complexType>
-         <attribute name="dataValueInterface" type="string" use="required">
+         <attribute name="metaData" type="string" use="required">
             <annotation>
                <documentation>
-                  The data value for which meta data is registered.
+                  The meta data class.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="java" basedOn=":org.knime.core.data.DataValue"/>
+                  <meta.attribute kind="java" basedOn=":org.knime.core.data.meta.MetaData"/>
                </appInfo>
             </annotation>
          </attribute>
-         <attribute name="dataValueMetaDataClass" type="string" use="required">
+         <attribute name="serializer" type="string" use="required">
             <annotation>
                <documentation>
-                  The meta data for a particular data value type.
+                  Serializer for the meta data.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="java" basedOn=":org.knime.core.data.DataValueMetaData"/>
+                  <meta.attribute kind="java" basedOn=":org.knime.core.data.meta.MetaData$Serializer"/>
                </appInfo>
             </annotation>
          </attribute>
-         <attribute name="dataValueMetaDataSerializerClass" type="string" use="required">
+         <attribute name="creatorFactory" type="string" use="required">
             <annotation>
                <documentation>
-                  Serializer for the DataValueMetaData.
+                  Factory for meta data creators.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="java" basedOn=":org.knime.core.data.DataValueMetaData$DataValueMetaDataSerializer"/>
+                  <meta.attribute kind="java" basedOn=":org.knime.core.data.meta.MetaDataCreatorFactory"/>
                </appInfo>
             </annotation>
          </attribute>

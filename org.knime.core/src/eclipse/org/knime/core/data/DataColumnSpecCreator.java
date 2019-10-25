@@ -59,6 +59,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntPredicate;
 
+import org.knime.core.data.meta.MetaData;
 import org.knime.core.data.property.ColorHandler;
 import org.knime.core.data.property.ShapeHandler;
 import org.knime.core.data.property.SizeHandler;
@@ -172,7 +173,7 @@ public final class DataColumnSpecCreator {
         m_colorHandler = cspec.getColorHandler();
         // property filter
         m_filterHandler = cspec.getFilterHandler().orElse(null);
-        m_metaDataCreator = new MetaDataManager.Creator(cspec.getMetaData());
+        m_metaDataCreator = new MetaDataManager.Creator(cspec.getMetaDataManager());
     }
 
     private void updateType(final DataType other) {
@@ -214,7 +215,7 @@ public final class DataColumnSpecCreator {
             updateType(cspec2.getType());
         }
         mergeDomains(cspec2.getDomain());
-        m_metaDataCreator.merge(cspec2.getMetaData());
+        m_metaDataCreator.merge(cspec2.getMetaDataManager());
         mergeColorHandlers(cspec2.getColorHandler());
         mergeShapeHandlers(cspec2.getShapeHandler());
         mergeSizeHandlers(cspec2.getSizeHandler());

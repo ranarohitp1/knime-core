@@ -56,7 +56,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.MetaData;
+import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.MetaDataSerializer;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.util.CheckUtils;
 
@@ -74,6 +77,7 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
 
     /**
      * Framework constructor.
+     *
      * @noreference This constructor is not intended to be referenced by clients.
      */
     public DefaultNominalDistributionValueMetaData() {
@@ -122,6 +126,36 @@ public final class DefaultNominalDistributionValueMetaData implements NominalDis
             mergedValues.addAll(otherMeta.getValues());
             return new DefaultNominalDistributionValueMetaData(mergedValues);
         }
+    }
+
+    /**
+     * Serializer for {@link DefaultNominalDistributionValueMetaData} objects.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public static final class DefaultNominalDistributionValueMetaDataSerializer implements MetaDataSerializer {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void save(final MetaData metaData, final ConfigWO config) {
+            CheckUtils.checkState(metaData instanceof DefaultNominalDistributionValueMetaData,
+                "Unexpected meta data type '%s' encountered.", metaData.getClass().getName());
+            final DefaultNominalDistributionValueMetaData meta = (DefaultNominalDistributionValueMetaData)metaData;
+            config.addDataCellArray(CFG_VALUES, meta.m_values.toArray(new DataCell[0]));
+        }
+
+        /**
+         * {@inheritDoc}
+         * @throws InvalidSettingsException
+         */
+        @Override
+        public MetaData load(final ConfigRO config) throws InvalidSettingsException {
+            final String[] values = config.getStringArray(CFG_VALUES);
+            return new DefaultNominalDistributionValueMetaData(values);
+        }
+
     }
 
 }

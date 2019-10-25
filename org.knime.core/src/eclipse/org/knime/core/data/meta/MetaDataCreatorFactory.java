@@ -44,43 +44,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 11, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 25, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.core.data;
+package org.knime.core.data.meta;
 
-import org.knime.core.node.config.ConfigWO;
+import org.knime.core.data.DataValue;
 
 /**
- * This interface describes meta data that belongs to a certain type of {@link DataValue}.
- * {@link MetaData} objects are expected to be immutable (except for the load method).
+ * Factory for {@link MetaDataCreator creators} of a particular {@link MetaData} type.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @param <T> the type of {@link DataValue} this {@link MetaData} belongs to
  * @since 4.1
  */
-public interface MetaData {
+public interface MetaDataCreatorFactory {
 
-    /**
-     * Saves the meta data to {@link ConfigWO config}.
-     * @param config to save to
-     */
-    void save(final ConfigWO config);
+    boolean refersTo(final Class<? extends DataValue> valueClass);
 
-//    /**
-//     * @return the {@link DataValue} type this meta data belongs to
-//     */
-//    Class<T> getValueType();
-
-    /**
-     * Merges the contents of <b>this</b> and <b>other</b> to create a new(!) {@link MetaData} object.
-     * This method should not modify <b>this</b> or <b>other</b>.
-     *
-     * Note: Implementing classes must ensure that <b>other</b> has the correct value type i.e.
-     * <code>other.getValueType().equals(this.getValueType())</code>.
-     *
-     * @param other the {@link MetaData} to merge with
-     * @return a new {@link MetaData} object that contains the merged information of <b>this</b> and <b>other</b>
-     */
-    MetaData merge(MetaData other);
-
+    MetaDataCreator create();
 }

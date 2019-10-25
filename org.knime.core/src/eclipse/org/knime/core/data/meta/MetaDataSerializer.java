@@ -44,14 +44,13 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 25, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.core.data.probability;
+package org.knime.core.data.meta;
 
-import java.util.Set;
-
-import org.knime.core.data.DataCell;
-import org.knime.core.data.meta.MetaData;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.config.ConfigRO;
+import org.knime.core.node.config.ConfigWO;
 
 /**
  * TODO
@@ -59,13 +58,9 @@ import org.knime.core.data.meta.MetaData;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface NominalDistributionValueMetaData extends MetaData {
+public interface MetaDataSerializer {
 
-    /**
-     * The returned set is guaranteed to have a fixed order.
-     *
-     * @return the {@link DataCell values} this distribution is defined over
-     */
-    Set<String> getValues();
+    void save(final MetaData metaData, final ConfigWO config);
 
+    MetaData load(final ConfigRO config) throws InvalidSettingsException;
 }

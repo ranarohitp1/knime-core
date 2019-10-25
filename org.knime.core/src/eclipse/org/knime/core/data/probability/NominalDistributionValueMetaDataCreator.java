@@ -51,10 +51,8 @@ package org.knime.core.data.probability;
 import java.util.LinkedHashSet;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.MetaData;
-import org.knime.core.data.MetaDataCreator;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
+import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.MetaDataCreator;
 import org.knime.core.node.util.CheckUtils;
 
 /**
@@ -117,18 +115,6 @@ public final class NominalDistributionValueMetaDataCreator
         final NominalDistributionValueMetaDataCreator otherCreator = (NominalDistributionValueMetaDataCreator)other;
         m_values.addAll(otherCreator.m_values);
     }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws InvalidSettingsException
-     */
-    @Override
-    public NominalDistributionValueMetaData createFromConfig(final ConfigRO config) throws InvalidSettingsException {
-        final String[] values = config.getStringArray(DefaultNominalDistributionValueMetaData.CFG_VALUES);
-        return new DefaultNominalDistributionValueMetaData(values);
-    }
-
 
     /**
      * {@inheritDoc}

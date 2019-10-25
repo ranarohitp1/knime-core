@@ -56,9 +56,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.knime.core.data.DataValue.UtilityFactory;
 import org.knime.core.data.container.BlobWrapperDataCell;
 import org.knime.core.data.container.DataContainerSettings;
+import org.knime.core.data.meta.MetaDataRegistry;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -114,23 +114,8 @@ public class DataTableDomainCreator {
     public DataTableDomainCreator(final DataTableSpec inputSpec,
         final DomainCreatorColumnSelection domainValuesColumnSelection,
         final DomainCreatorColumnSelection domainMinMaxColumnSelection) {
-        this(inputSpec, domainValuesColumnSelection, domainMinMaxColumnSelection, new DomainCreatorColumnSelection() {
-
-            @Override
-            public boolean dropDomain(final DataColumnSpec colSpec) {
-                // TODO discuss with Bernd/Mark what the default should be
-                return false;
-            }
-
-            @Override
-            public boolean createDomain(final DataColumnSpec colSpec) {
-                return hasMetaData(colSpec.getType());
-            }
-        });
-    }
-
-    private static boolean hasMetaData(final DataType type) {
-        return type.getValueClasses().stream().map(DataType::getUtilityFor).anyMatch(UtilityFactory::hasMetaData);
+        this(inputSpec, domainValuesColumnSelection, domainMinMaxColumnSelection,
+            DomainCreatorColumnSelection.create(c -> false, c -> MetaDataRegistry.INSTANCE.hasMetaData(c.getType())));
     }
 
     /**
@@ -222,27 +207,9 @@ public class DataTableDomainCreator {
      *            spec, <code>false</code> if the domain should be initially empty
      */
     public DataTableDomainCreator(final DataTableSpec inputSpec, final boolean initDomain) {
-        this(inputSpec, new DomainCreatorColumnSelection() {
-            @Override
-            public boolean createDomain(final DataColumnSpec colSpec) {
-                return colSpec.getType().isCompatible(NominalValue.class);
-            }
-
-            @Override
-            public boolean dropDomain(final DataColumnSpec colSpec) {
-                return !initDomain;
-            }
-        }, new DomainCreatorColumnSelection() {
-            @Override
-            public boolean createDomain(final DataColumnSpec colSpec) {
-                return colSpec.getType().isCompatible(BoundedValue.class);
-            }
-
-            @Override
-            public boolean dropDomain(final DataColumnSpec colSpec) {
-                return !initDomain;
-            }
-        });
+        this(inputSpec,
+            DomainCreatorColumnSelection.create(c -> c.getType().isCompatible(NominalValue.class), c -> !initDomain),
+            DomainCreatorColumnSelection.create(c -> c.getType().isCompatible(BoundedValue.class), c -> !initDomain));
     }
 
     /**

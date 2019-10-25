@@ -55,6 +55,7 @@ import static org.mockito.Mockito.mock;
 import java.util.Optional;
 
 import org.junit.Test;
+import org.knime.core.data.meta.MetaData;
 
 /**
  *

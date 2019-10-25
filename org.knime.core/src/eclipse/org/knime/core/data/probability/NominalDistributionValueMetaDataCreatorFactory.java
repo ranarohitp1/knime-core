@@ -42,30 +42,36 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- *
+ * 
  * History
- *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 25, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data.probability;
 
-import java.util.Set;
-
-import org.knime.core.data.DataCell;
-import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.DataValue;
+import org.knime.core.data.meta.MetaDataCreator;
+import org.knime.core.data.meta.MetaDataCreatorFactory;
 
 /**
- * TODO
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @since 4.1
  */
-public interface NominalDistributionValueMetaData extends MetaData {
+public final class NominalDistributionValueMetaDataCreatorFactory implements MetaDataCreatorFactory {
 
     /**
-     * The returned set is guaranteed to have a fixed order.
-     *
-     * @return the {@link DataCell values} this distribution is defined over
+     * {@inheritDoc}
      */
-    Set<String> getValues();
+    @Override
+    public boolean refersTo(final Class<? extends DataValue> valueClass) {
+        return NominalDistributionValue.class.equals(valueClass);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MetaDataCreator create() {
+        return new NominalDistributionValueMetaDataCreator();
+    }
 
 }

@@ -55,7 +55,6 @@ import javax.swing.Icon;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataValue;
 import org.knime.core.data.ExtensibleUtilityFactory;
-import org.knime.core.data.MetaDataCreator;
 import org.knime.core.node.util.SharedIcons;
 
 /**
@@ -119,22 +118,6 @@ public interface NominalDistributionValue extends DataValue {
         @Override
         public String getName() {
             return "Nominal Probability Distribution";
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean hasMetaData() {
-            return true;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public MetaDataCreator getMetaDataCreator() {
-            return new NominalDistributionValueMetaDataCreator();
         }
 
     }

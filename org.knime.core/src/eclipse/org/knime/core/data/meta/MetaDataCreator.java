@@ -46,26 +46,60 @@
  * History
  *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.core.data.probability;
-
-import java.util.Set;
+package org.knime.core.data.meta;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.DataTableDomainCreator;
 
 /**
- * TODO
+ * Allows to create {@link MetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface NominalDistributionValueMetaData extends MetaData {
+public interface MetaDataCreator {
 
     /**
-     * The returned set is guaranteed to have a fixed order.
+     * Updates the meta data according to the contents of cell.</br>
+     * Missing values and incompatible cell types (e.g. in a transposed table) must not cause
+     * an exception and should simply be ignored.
      *
-     * @return the {@link DataCell values} this distribution is defined over
+     * @param cell whose information should (if possible) be included in the meta data
      */
-    Set<String> getValues();
+    void update(final DataCell cell);
 
+    /**
+     * Creates the {@link MetaData} corresponding to the current state of this creator.</br>
+     * It must be possible to call this method multiple times even if the creator is still updated and
+     * {@link MetaData metaData objects} created in different calls must be independent from each other
+     * i.e. they may not share any mutable objects.
+     *
+     * @return the {@link MetaData} containing the meta data at the current state of this creator
+     */
+    MetaData create();
+
+    /**
+     * Creates a deep copy of this creator i.e. calling update on the copied creator
+     * has no effect on this creator.
+     *
+     * @return a deep copy of this creator
+     */
+    MetaDataCreator copy();
+
+    /**
+     * Merges two {@link MetaDataCreator creators} by including the data
+     * from <b>other</b> into this creator.
+     *
+     * @param other the creator to merge into this creator
+     */
+    default void merge(final MetaDataCreator other) {
+        merge(other.create());
+    }
+
+    /**
+     * Merges the information from {@link MetaData other} into this creator.
+     *
+     * @param other the {@link MetaData} to merge into this creator
+     */
+    void merge(final MetaData other);
 }

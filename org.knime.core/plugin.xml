@@ -15,6 +15,7 @@
    <extension-point id="DataCellToJavaConverter" name="DataCellToJavaConverter" schema="schema/DataCellToJavaConverter.exsd"/>
    <extension-point id="WorkflowSaveHook" name="Extensions that are run after a workflow is saved to disc" schema="schema/WorkflowSaveHook.exsd"/>
    <extension-point id="FileSystemBrowser" name="FileSystemBrowser" schema="schema/FileSystemBrowser.exsd"/>
+   <extension-point id="MetaDataType" name="MetaDataType" schema="schema/MetaDataType.exsd"/>
    <extension
          point="org.knime.core.NodeExecutionJobManagerFactory">
       <NodeExecutionJobManagerFactory
@@ -663,5 +664,13 @@
       <WorkflowSaveHook
             class="org.knime.core.node.workflow.artifacts.WorkflowConfigArtifactsGenerator">
       </WorkflowSaveHook>
+   </extension>
+   <extension
+         point="org.knime.core.MetaDataType">
+      <MetaData
+            creatorFactory="org.knime.core.data.probability.NominalDistributionValueMetaDataCreatorFactory"
+            metaData="org.knime.core.data.probability.DefaultNominalDistributionValueMetaData"
+            serializer="org.knime.core.data.probability.DefaultNominalDistributionValueMetaData$DefaultNominalDistributionValueMetaDataSerializer">
+      </MetaData>
    </extension>
 </plugin>

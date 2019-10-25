@@ -55,7 +55,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.knime.core.data.DataValue.UtilityFactory;
+import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.MetaDataRegistry;
+import org.knime.core.data.meta.MetaDataSerializer;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
@@ -88,22 +90,18 @@ final class MetaDataManager {
     }
 
     void save(final ConfigWO config) {
-        m_valueMetaDataMap.forEach((k, v) -> v.save(config.addConfig(k.getCanonicalName())));
+        m_valueMetaDataMap.forEach((k, v) -> MetaDataRegistry.INSTANCE.getSerializer(k).save(v, config));
     }
 
     static MetaDataManager load(final DataType type, final ConfigRO config) throws InvalidSettingsException {
-        final Map<Class<? extends MetaData>, MetaData> valueMetaDataMap = new HashMap<>();
-        for (Class<? extends DataValue> valueClass : type.getValueClasses()) {
-            final UtilityFactory utilityFactory = DataType.getUtilityFor(valueClass);
-            if (!utilityFactory.hasMetaData()) {
-                // this DataValue class has no associated meta data
-                continue;
-            }
-            final MetaDataCreator creator = utilityFactory.getMetaDataCreator();
-            final MetaData metaData = creator.createFromConfig(config.getConfig(valueClass.getCanonicalName()));
-            valueMetaDataMap.put(metaData.getClass(), metaData);
+        final Map<Class<? extends MetaData>, MetaData> metaDataMap = new HashMap<>();
+
+        for (String key : config) {
+            final MetaDataSerializer serializer = MetaDataRegistry.INSTANCE.getSerializer(key);
+            final MetaData metaData = serializer.load(config.getConfig(key));
+            metaDataMap.put(metaData.getClass(), metaData);
         }
-        return new MetaDataManager(valueMetaDataMap);
+        return new MetaDataManager(metaDataMap);
     }
 
     MetaDataManager merge(final MetaDataManager other) {

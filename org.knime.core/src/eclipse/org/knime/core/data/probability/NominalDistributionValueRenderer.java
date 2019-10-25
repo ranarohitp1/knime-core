@@ -52,7 +52,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.MetaData;
+import org.knime.core.data.meta.MetaData;
 import org.knime.core.data.renderer.AbstractDataValueRendererFactory;
 import org.knime.core.data.renderer.DataValueRenderer;
 import org.knime.core.data.renderer.DefaultDataValueRenderer;

@@ -174,32 +174,5 @@ public interface DataValue {
             return ViewUtils.loadIcon(className, path);
         }
 
-        /**
-         * This method indicates whether a {@link DataValue} has meta data associated
-         * with it (see NominalDistributionValue for an example). </br>
-         *
-         * In case this method returns true, {@link UtilityFactory#getMetaDataCreator()} must
-         * return a non-null {@link MetaDataCreator} instance.
-         *
-         * @return true if this {@link DataValue} has meta data
-         * @since 4.1
-         */
-        public boolean hasMetaData() {
-            return false;
-        }
-
-        /**
-         * Creates a {@link MetaDataCreator} that can create meta data for this {@link DataValue}
-         * from actual data. </br>
-         *
-         * In case this {@link DataValue} doesn't have meta data, this method can just return null.
-         *
-         * @return a new {@link MetaDataCreator}
-         * @since 4.1
-         */
-        public MetaDataCreator getMetaDataCreator() {
-            throw new IllegalStateException("This data value has no meta data.");
-        }
-
     }
 }

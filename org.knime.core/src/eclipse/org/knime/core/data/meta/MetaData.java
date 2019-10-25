@@ -44,72 +44,39 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 11, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.core.data;
+package org.knime.core.data.meta;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.config.ConfigRO;
+import org.knime.core.data.DataValue;
+import org.knime.core.node.config.ConfigWO;
 
 /**
- * Allows to create {@link MetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
+ * TODO rewrite
+ * This interface describes meta data that belongs to a certain type of {@link DataValue}.
+ * {@link MetaData} objects are expected to be immutable (except for the load method).
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface MetaDataCreator {
+public interface MetaData {
 
     /**
-     * Updates the meta data according to the contents of cell.</br>
-     * Missing values and incompatible cell types (e.g. in a transposed table) must not cause
-     * an exception and should simply be ignored.
-     *
-     * @param cell whose information should (if possible) be included in the meta data
+     * Saves the meta data to {@link ConfigWO config}.
+     * @param config to save to
      */
-    void update(final DataCell cell);
+    void save(final ConfigWO config);
 
     /**
-     * Creates the {@link MetaData} corresponding to the current state of this creator.</br>
-     * It must be possible to call this method multiple times even if the creator is still updated and
-     * {@link MetaData metaData objects} created in different calls must be independent from each other
-     * i.e. they may not share any mutable objects.
+     * Merges the contents of <b>this</b> and <b>other</b> to create a new(!) {@link MetaData} object.
+     * This method should not modify <b>this</b> or <b>other</b>.
      *
-     * @return the {@link MetaData} containing the meta data at the current state of this creator
+     * Note: Implementing classes must ensure that <b>other</b> has the correct value type i.e.
+     * <code>other.getValueType().equals(this.getValueType())</code>.
+     *
+     * @param other the {@link MetaData} to merge with
+     * @return a new {@link MetaData} object that contains the merged information of <b>this</b> and <b>other</b>
      */
-    MetaData create();
+    MetaData merge(MetaData other);
 
-    /**
-     * Creates a {@link MetaData} from a stored {@link ConfigRO config}.
-     * This is used during serialization of {@link DataColumnSpec} objects.
-     *
-     * @param config containing the necessary meta data
-     * @return the {@link MetaData} containing the meta data stored in {@link ConfigRO config}
-     * @throws InvalidSettingsException if the data stored in {@link ConfigRO config} is invalid
-     */
-    MetaData createFromConfig(final ConfigRO config) throws InvalidSettingsException;
-
-    /**
-     * Creates a deep copy of this creator i.e. calling update on the copied creator
-     * has no effect on this creator.
-     *
-     * @return a deep copy of this creator
-     */
-    MetaDataCreator copy();
-
-    /**
-     * Merges two {@link MetaDataCreator creators} by including the data
-     * from <b>other</b> into this creator.
-     *
-     * @param other the creator to merge into this creator
-     */
-    default void merge(final MetaDataCreator other) {
-        merge(other.create());
-    }
-
-    /**
-     * Merges the information from {@link MetaData other} into this creator.
-     *
-     * @param other the {@link MetaData} to merge into this creator
-     */
-    void merge(final MetaData other);
 }

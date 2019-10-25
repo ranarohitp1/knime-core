@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.knime.core.data.meta.MetaData;
 import org.knime.core.data.property.ColorHandler;
 import org.knime.core.data.property.ShapeHandler;
 import org.knime.core.data.property.SizeHandler;
@@ -271,7 +272,7 @@ public final class DataColumnSpec {
         return Optional.ofNullable(m_filterHandler);
     }
 
-    MetaDataManager getMetaData() {
+    MetaDataManager getMetaDataManager() {
         return m_metaDataManager;
     }
 
@@ -333,7 +334,7 @@ public final class DataColumnSpec {
             && getDomain().equals(cspec.getDomain())
             && getProperties().equals(cspec.getProperties())
             && getElementNames().equals(cspec.getElementNames())
-            && getMetaData().equals(cspec.getMetaData());
+            && getMetaDataManager().equals(cspec.getMetaDataManager());
         return areEqual
                 && Objects.equals(m_colorHandler, cspec.m_colorHandler)
                 && Objects.equals(m_sizeHandler, cspec.m_sizeHandler)
