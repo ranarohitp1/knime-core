@@ -56,9 +56,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.knime.core.data.MetaDataCalculators.MetaDataCalculator;
 import org.knime.core.data.container.BlobWrapperDataCell;
 import org.knime.core.data.container.DataContainerSettings;
-import org.knime.core.data.meta.MetaDataRegistry;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -115,7 +115,7 @@ public class DataTableDomainCreator {
         final DomainCreatorColumnSelection domainValuesColumnSelection,
         final DomainCreatorColumnSelection domainMinMaxColumnSelection) {
         this(inputSpec, domainValuesColumnSelection, domainMinMaxColumnSelection,
-            DomainCreatorColumnSelection.create(c -> false, c -> MetaDataRegistry.INSTANCE.hasMetaData(c.getType())));
+            DomainCreatorColumnSelection.create(c -> true, c -> false));
     }
 
     /**
@@ -134,7 +134,6 @@ public class DataTableDomainCreator {
         final DomainCreatorColumnSelection domainValuesColumnSelection,
         final DomainCreatorColumnSelection domainMinMaxColumnSelection,
         final DomainCreatorColumnSelection metaDataColumnSelection) {
-        // TODO should we have a MetaDataColumnSelection too? We can't drop the information but we could replace it with the information provided by the cells
         m_inputSpec = inputSpec;
         m_mins = new DataCell[inputSpec.getNumColumns()];
         m_minsMissing = new boolean[inputSpec.getNumColumns()];
@@ -192,8 +191,9 @@ public class DataTableDomainCreator {
             if (m_maxs[i] != null) {
                 m_maxsMissing[i] = m_maxs[i].isMissing();
             }
-            // TODO discuss with Bernd/Mark how we should treat meta data in the DataTableDomainCreator
-            m_metaDataCalculators[i] = new MetaDataCalculator(colSpec, !metaDataColumnSelection.dropDomain(colSpec));
+
+            m_metaDataCalculators[i] = MetaDataCalculators.createCalculator(colSpec,
+                metaDataColumnSelection.createDomain(colSpec), metaDataColumnSelection.dropDomain(colSpec));
             i++;
         }
     }
@@ -236,8 +236,8 @@ public class DataTableDomainCreator {
         }
         m_comparators = toCopy.m_comparators.clone();
         m_batchId = toCopy.m_batchId;
-        m_metaDataCalculators =
-            Arrays.stream(toCopy.m_metaDataCalculators).map(MetaDataCalculator::new).toArray(MetaDataCalculator[]::new);
+        m_metaDataCalculators = Arrays.stream(toCopy.m_metaDataCalculators).map(MetaDataCalculators::copy)
+            .toArray(MetaDataCalculator[]::new);
     }
 
     /**
