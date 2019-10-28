@@ -63,16 +63,16 @@ public final class NominalDistributionValueMetaDataCreatorFactory implements Met
      * {@inheritDoc}
      */
     @Override
-    public boolean refersTo(final Class<? extends DataValue> valueClass) {
-        return NominalDistributionValue.class.equals(valueClass);
+    public MetaDataCreator create() {
+        return new NominalDistributionValueMetaDataCreator();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public MetaDataCreator create() {
-        return new NominalDistributionValueMetaDataCreator();
+    public Class<? extends DataValue> getDataValueClass() {
+        return NominalDistributionValue.class;
     }
 
 }

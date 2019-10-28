@@ -59,10 +59,10 @@ import org.knime.core.data.meta.MetaDataCreator;
 import org.knime.core.data.meta.MetaDataRegistry;
 
 /**
- * Calculates meta data from actual data by creating meta data corresponding to the presented rows. This is done by
- * retrieving the {@link MetaDataCreator creators} for all {@link DataValue} interfaces the {@link DataType} of
- * the current column contains that declare that they have {@link MetaData}. A {@link DataValue} has {@link MetaData} if
- * its {@link UtilityFactory} returns true in {@link UtilityFactory#hasMetaData()} in which case
+ * Calculates meta data from actual data by creating meta data corresponding to the presented rows.<br/>
+ * This is done by retrieving the {@link MetaDataCreator creators} for all {@link DataValue} interfaces the
+ * {@link DataType} of the current column contains that declare that they have {@link MetaData}. A {@link DataValue} has
+ * {@link MetaData} if its {@link UtilityFactory} returns true in {@link UtilityFactory#hasMetaData()} in which case
  * {@link UtilityFactory#getMetaDataCreator()} must return an instance of {@link MetaDataCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
@@ -85,14 +85,13 @@ final class MetaDataCalculator {
     }
 
     /**
-     * Copies <b>toCopy</b> by also copying all {@link MetaDataCreator DataValueMetaDataCreators} it contains.
-     * This means that any later change to <b>toCopy</b> does NOT affect the newly created instance.
+     * Copies <b>toCopy</b> by also copying all {@link MetaDataCreator DataValueMetaDataCreators} it contains. This
+     * means that any later change to <b>toCopy</b> does NOT affect the newly created instance.
      *
      * @param toCopy the MetaDataCalculator to copy
      */
     MetaDataCalculator(final MetaDataCalculator toCopy) {
-        m_metaDataCreators =
-            toCopy.m_metaDataCreators.stream().map(MetaDataCreator::copy).collect(Collectors.toList());
+        m_metaDataCreators = toCopy.m_metaDataCreators.stream().map(MetaDataCreator::copy).collect(Collectors.toList());
     }
 
     void update(final DataCell cell) {

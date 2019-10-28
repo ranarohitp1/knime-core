@@ -53,14 +53,30 @@ import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 
 /**
- * TODO
+ * Serializer for {@link MetaData} used to save and restore {@link MetaData} objects to and from config files. <br/>
+ * Typically, a serializer will be implemented as private static class of a MetaData object, so it can access the
+ * private fields and constructors of its associated {@link MetaData} class.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
 public interface MetaDataSerializer {
 
+    /**
+     * Saves {@link MetaData metaData} to {@link ConfigWO config}.
+     *
+     * @param metaData the {@link MetaData} to save
+     * @param config {@link ConfigWO} to write to
+     */
     void save(final MetaData metaData, final ConfigWO config);
 
+    /**
+     * Creates a new {@link MetaData} from the values stored in {@link ConfigRO} or fails with an
+     * {@link InvalidSettingsException} if the stored values are invalid.
+     *
+     * @param config the {@link ConfigRO} to load the {@link MetaData} from
+     * @return the {@link MetaData} corresponding to the values stored in {@link ConfigRO config}
+     * @throws InvalidSettingsException if the values in {@link ConfigRO config} are invalid
+     */
     MetaData load(final ConfigRO config) throws InvalidSettingsException;
 }

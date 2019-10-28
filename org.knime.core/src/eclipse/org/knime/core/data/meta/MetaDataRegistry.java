@@ -63,14 +63,18 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.DataType;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.util.CheckUtils;
 
 /**
- * TODO
+ * The registry for {@link MetaData} registered via the MetaData extension point.
+ *
+ * It allows to retrieve creators and serializers for MetaData.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
 public enum MetaDataRegistry {
+
         /**
          * The MetaDataRegistry instance.
          */
@@ -96,9 +100,9 @@ public enum MetaDataRegistry {
         for (IExtension ext : point.getExtensions()) {
             for (IConfigurationElement config : ext.getConfigurationElements()) {
                 final String metaDataClass = config.getAttribute("metaData");
-                final MetaDataSerializer serializer = createInstance(config, "serializer",
-                    MetaDataSerializer.class, "Could not create serializer for meta data '%s' from plug-in '%s'.",
-                    metaDataClass, config.getNamespaceIdentifier());
+                final MetaDataSerializer serializer = createInstance(config, "serializer", MetaDataSerializer.class,
+                    "Could not create serializer for meta data '%s' from plug-in '%s'.", metaDataClass,
+                    config.getNamespaceIdentifier());
                 m_serializers.put(metaDataClass, serializer);
             }
         }
@@ -114,20 +118,49 @@ public enum MetaDataRegistry {
         }
     }
 
+    /**
+     * Fetches a collection of all {@link MetaDataCreator creators} that can be used to create meta data for columns of
+     * {@link DataType} type. </br>
+     * An empty collection is returned if there are no {@link MetaDataCreator creators} for this type.
+     *
+     * @param type the {@link DataType type} for which the {@link MetaDataCreator MetaDataCreators} are required
+     * @return the {@link MetaDataCreator creators} for meta data referring to {@link DataType type}
+     */
     public Collection<MetaDataCreator> getCreators(final DataType type) {
+        CheckUtils.checkNotNull(type);
         return type.getValueClasses().stream()
-            .flatMap(d -> m_creatorFactories.stream().filter(m -> m.refersTo(d))).map(MetaDataCreatorFactory::create)
-            .collect(Collectors.toList());
+            .flatMap(d -> m_creatorFactories.stream().filter(m -> m.getDataValueClass().isAssignableFrom(d)))
+            .map(MetaDataCreatorFactory::create).collect(Collectors.toList());
     }
 
+    /**
+     * Checks if there are any {@link MetaDataCreator MetaDataCreators} associated with {@link DataType} type.
+     *
+     * @param type the {@link DataType} for which to check if there is any {@link MetaDataCreator} associated with it
+     * @return true if there is at least one {@link MetaDataCreator} that can generate {@link MetaData} for
+     *         {@link DataType type}
+     */
     public boolean hasMetaData(final DataType type) {
-        return type.getValueClasses().stream().anyMatch(d -> m_creatorFactories.stream().anyMatch(m -> m.refersTo(d)));
+        return type.getValueClasses().stream()
+            .anyMatch(d -> m_creatorFactories.stream().anyMatch(m -> m.getDataValueClass().isAssignableFrom(d)));
     }
 
+    /**
+     * Gets the {@link MetaDataSerializer} for {@link MetaData} of class <b>metaDataClass</b>.
+     *
+     * @param metaDataClass the class of {@link MetaData} the serializer is required for
+     * @return the serializer for {@link MetaData} of class <b>metaDataClass</b>
+     */
     public MetaDataSerializer getSerializer(final Class<? extends MetaData> metaDataClass) {
         return m_serializers.get(metaDataClass.getName());
     }
 
+    /**
+     * Gets the {@link MetaDataSerializer} for {@link MetaData} with the class name <b>metaDataClass</b>.
+     *
+     * @param metaDataClassName the name of the class of {@link MetaData} the serializer is required for
+     * @return the serializer for {@link MetaData} with class name <b>metaDataClassName</b>
+     */
     public MetaDataSerializer getSerializer(final String metaDataClassName) {
         return m_serializers.get(metaDataClassName);
     }

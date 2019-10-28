@@ -58,7 +58,13 @@ import org.knime.core.data.DataValue;
  */
 public interface MetaDataCreatorFactory {
 
-    boolean refersTo(final Class<? extends DataValue> valueClass);
+    /**
+     * @return the type of {@link DataValue} the {@link MetaData} associated with this factory is concerned with
+     */
+    Class<? extends DataValue> getDataValueClass();
 
+    /**
+     * @return a fresh {@link MetaDataCreator} instance
+     */
     MetaDataCreator create();
 }
