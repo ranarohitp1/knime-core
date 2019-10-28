@@ -84,9 +84,9 @@ public enum MetaDataRegistry {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(MetaDataRegistry.class);
 
-    private final Map<String, MetaDataSerializer> m_serializers;
+    private final Map<String, MetaDataSerializer<?>> m_serializers;
 
-    private final Collection<MetaDataCreatorFactory> m_creatorFactories;
+    private final Collection<MetaDataCreatorFactory<?>> m_creatorFactories;
 
     private MetaDataRegistry() {
         final IExtensionPoint point = getExtensionPoint();
@@ -100,7 +100,7 @@ public enum MetaDataRegistry {
         for (IExtension ext : point.getExtensions()) {
             for (IConfigurationElement config : ext.getConfigurationElements()) {
                 final String metaDataClass = config.getAttribute("metaData");
-                final MetaDataSerializer serializer = createInstance(config, "serializer", MetaDataSerializer.class,
+                final MetaDataSerializer<?> serializer = createInstance(config, "serializer", MetaDataSerializer.class,
                     "Could not create serializer for meta data '%s' from plug-in '%s'.", metaDataClass,
                     config.getNamespaceIdentifier());
                 m_serializers.put(metaDataClass, serializer);
@@ -126,7 +126,7 @@ public enum MetaDataRegistry {
      * @param type the {@link DataType type} for which the {@link MetaDataCreator MetaDataCreators} are required
      * @return the {@link MetaDataCreator creators} for meta data referring to {@link DataType type}
      */
-    public Collection<MetaDataCreator> getCreators(final DataType type) {
+    public Collection<MetaDataCreator<?>> getCreators(final DataType type) {
         CheckUtils.checkNotNull(type);
         return type.getValueClasses().stream()
             .flatMap(d -> m_creatorFactories.stream().filter(m -> m.getDataValueClass().isAssignableFrom(d)))
@@ -151,8 +151,15 @@ public enum MetaDataRegistry {
      * @param metaDataClass the class of {@link MetaData} the serializer is required for
      * @return the serializer for {@link MetaData} of class <b>metaDataClass</b>
      */
-    public MetaDataSerializer getSerializer(final Class<? extends MetaData> metaDataClass) {
-        return m_serializers.get(metaDataClass.getName());
+    @SuppressWarnings("null") // we explicitly check for null
+    public <T extends MetaData> MetaDataSerializer<T> getSerializer(final Class<T> metaDataClass) {
+        final MetaDataSerializer<?> wildCardSerializer = m_serializers.get(metaDataClass.getName());
+        CheckUtils.checkState(wildCardSerializer != null, "No serializer registered for meta data class %s.",
+            metaDataClass.getName());
+        assert wildCardSerializer.getMetaDataClass().isAssignableFrom(metaDataClass);
+        @SuppressWarnings("unchecked") // the above assertion ensures wildCardSerializer is a MetaDataSerializer<T>
+        final MetaDataSerializer<T> typedSerializer = (MetaDataSerializer<T>)wildCardSerializer;
+        return typedSerializer;
     }
 
     /**
@@ -161,7 +168,7 @@ public enum MetaDataRegistry {
      * @param metaDataClassName the name of the class of {@link MetaData} the serializer is required for
      * @return the serializer for {@link MetaData} with class name <b>metaDataClassName</b>
      */
-    public MetaDataSerializer getSerializer(final String metaDataClassName) {
+    public MetaDataSerializer<?> getSerializer(final String metaDataClassName) {
         return m_serializers.get(metaDataClassName);
     }
 

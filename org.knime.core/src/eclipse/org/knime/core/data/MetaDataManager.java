@@ -61,6 +61,7 @@ import org.knime.core.data.meta.MetaDataSerializer;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
+import org.knime.core.node.util.CheckUtils;
 
 /**
  * Manages {@link MetaData} for a {@link DataColumnSpec}. Currently, only {@link MetaData} is supported.
@@ -77,10 +78,9 @@ final class MetaDataManager {
         m_valueMetaDataMap = valueMetaDataMap;
     }
 
-    <M extends MetaData> Optional<M>
-        getForType(final Class<M> metaDataClass) {
+    <M extends MetaData> Optional<M> getMetaDataOfType(final Class<M> metaDataClass) {
         final MetaData wildCardMetaData = m_valueMetaDataMap.get(metaDataClass);
-        if (wildCardMetaData == null) {
+        if (wildCardMetaData == null || !metaDataClass.isInstance(wildCardMetaData)) {
             return Optional.empty();
         }
         @SuppressWarnings("unchecked") // the check above ensures that wildCardMetaData
@@ -90,14 +90,25 @@ final class MetaDataManager {
     }
 
     void save(final ConfigWO config) {
-        m_valueMetaDataMap.forEach((k, v) -> MetaDataRegistry.INSTANCE.getSerializer(k).save(v, config));
+        m_valueMetaDataMap.forEach((k, v) -> save(k, k.cast(v), config));
+    }
+
+    @SuppressWarnings("unchecked") // we check compatibility programmatically
+    private static <M extends MetaData> void save(final Class<M> metaDataClass, final MetaData metaData,
+        final ConfigWO config) {
+        @SuppressWarnings("rawtypes") // unfortunately necessary to satisfy the compiler
+        final MetaDataSerializer serializer = MetaDataRegistry.INSTANCE.getSerializer(metaDataClass);
+        CheckUtils.checkState(serializer.getMetaDataClass().isInstance(metaData),
+            "The serializer expected meta data of type '%s' but received meta data of type '%s'.",
+            serializer.getMetaDataClass().getName(), metaData.getClass().getName());
+        serializer.save(metaData, config.addConfig(metaDataClass.getName()));
     }
 
     static MetaDataManager load(final ConfigRO config) throws InvalidSettingsException {
         final Map<Class<? extends MetaData>, MetaData> metaDataMap = new HashMap<>();
 
         for (String key : config) {
-            final MetaDataSerializer serializer = MetaDataRegistry.INSTANCE.getSerializer(key);
+            final MetaDataSerializer<?> serializer = MetaDataRegistry.INSTANCE.getSerializer(key);
             final MetaData metaData = serializer.load(config.getConfig(key));
             metaDataMap.put(metaData.getClass(), metaData);
         }
@@ -118,7 +129,6 @@ final class MetaDataManager {
         return m_valueMetaDataMap.equals(obj);
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -127,6 +137,11 @@ final class MetaDataManager {
         return m_valueMetaDataMap.hashCode();
     }
 
+    /**
+     * Allows to create {@link MetaDataManager} instances.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
     static final class Creator {
         private final Map<Class<? extends MetaData>, MetaData> m_valueMetaDataMap;
 
@@ -156,5 +171,4 @@ final class MetaDataManager {
             return new MetaDataManager(new HashMap<>(m_valueMetaDataMap));
         }
     }
-
 }

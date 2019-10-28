@@ -58,6 +58,7 @@ import org.knime.core.data.DataValue.UtilityFactory;
 import org.knime.core.data.meta.MetaData;
 import org.knime.core.data.meta.MetaDataCreator;
 import org.knime.core.data.meta.MetaDataRegistry;
+import org.knime.core.node.util.CheckUtils;
 
 /**
  * Provides calculators that can calculate meta data from actual data.<br/>
@@ -144,7 +145,7 @@ final class MetaDataCalculators {
      */
     private static class MetaDataCalculatorImpl implements MetaDataCalculator {
 
-        private final Collection<MetaDataCreator> m_metaDataCreators;
+        private final Collection<MetaDataCreator<?>> m_metaDataCreators;
 
         private final boolean m_updateMetaData;
 
@@ -153,10 +154,19 @@ final class MetaDataCalculators {
             m_metaDataCreators = MetaDataRegistry.INSTANCE.getCreators(spec.getType());
             m_updateMetaData = updateMetaData;
             if (initializeWithSpec) {
-                m_metaDataCreators.forEach(m -> m.merge(spec.getMetaDataOfType(m.getClass().asSubclass(MetaData.class))
-                    .orElseThrow(() -> new IllegalStateException(
+                m_metaDataCreators.forEach(m -> merge(m,
+                    spec.getMetaDataOfType(m.getMetaDataClass()).orElseThrow(() -> new IllegalStateException(
                         String.format("No meta data for type %s in column %s.", m.getClass(), spec)))));
             }
+        }
+
+        // the compatibility of creator and other is ensured at runtime
+        @SuppressWarnings("unchecked")
+        private static void merge(@SuppressWarnings("rawtypes") final MetaDataCreator creator, final MetaData other) {
+            CheckUtils.checkState(creator.getMetaDataClass().isInstance(other),
+                "Expected meta data of class '%s' but received meta data of class '%s'.",
+                creator.getMetaDataClass().getName(), other.getClass().getName());
+            creator.merge(other);
         }
 
         /**
@@ -190,13 +200,14 @@ final class MetaDataCalculators {
             merge((MetaDataCalculatorImpl)other);
         }
 
+        @SuppressWarnings("unchecked")
         private void merge(final MetaDataCalculatorImpl other) {
-            final Iterator<MetaDataCreator> otherCreators = other.m_metaDataCreators.iterator();
-            for (MetaDataCreator creator : m_metaDataCreators) {
+            final Iterator<MetaDataCreator<?>> otherCreators = other.m_metaDataCreators.iterator();
+            for (MetaDataCreator<?> creator : m_metaDataCreators) {
                 assert otherCreators.hasNext();
-                final MetaDataCreator otherCreator = otherCreators.next();
+                final MetaDataCreator<?> otherCreator = otherCreators.next();
                 assert creator.getClass().equals(otherCreator.getClass());
-                creator.merge(otherCreator);
+                creator.merge(creator.getClass().cast(otherCreator));
             }
         }
     }

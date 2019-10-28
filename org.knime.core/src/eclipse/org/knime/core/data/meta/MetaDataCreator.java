@@ -57,7 +57,9 @@ import org.knime.core.data.DataTableDomainCreator;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface MetaDataCreator {
+public interface MetaDataCreator<T extends MetaData> {
+
+    Class<T> getMetaDataClass();
 
     /**
      * Updates the meta data according to the contents of cell.</br>
@@ -76,7 +78,7 @@ public interface MetaDataCreator {
      *
      * @return the {@link MetaData} containing the meta data at the current state of this creator
      */
-    MetaData create();
+    T create();
 
     /**
      * Creates a deep copy of this creator i.e. calling update on the copied creator
@@ -84,7 +86,7 @@ public interface MetaDataCreator {
      *
      * @return a deep copy of this creator
      */
-    MetaDataCreator copy();
+    MetaDataCreator<T> copy();
 
     /**
      * Merges two {@link MetaDataCreator creators} by including the data
@@ -92,7 +94,7 @@ public interface MetaDataCreator {
      *
      * @param other the creator to merge into this creator
      */
-    default void merge(final MetaDataCreator other) {
+    default void merge(final MetaDataCreator<T> other) {
         merge(other.create());
     }
 
@@ -101,5 +103,5 @@ public interface MetaDataCreator {
      *
      * @param other the {@link MetaData} to merge into this creator
      */
-    void merge(final MetaData other);
+    void merge(final T other);
 }

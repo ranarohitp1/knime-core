@@ -6,7 +6,7 @@
          <meta.schema plugin="org.knime.core" id="MetaDataType" name="MetaDataType"/>
       </appInfo>
       <documentation>
-         [Enter description of this extension point.]
+         This extension point registers a type of MetaData at the KNIME Core. All plug-ins can then create and use the registered meta data types.
       </documentation>
    </annotation>
 
@@ -92,7 +92,7 @@
          <meta.section type="since"/>
       </appInfo>
       <documentation>
-         [Enter the first release in which this extension point appears.]
+         KNIME 4.1
       </documentation>
    </annotation>
 

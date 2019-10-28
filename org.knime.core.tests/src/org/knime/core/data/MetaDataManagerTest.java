@@ -73,7 +73,7 @@ public class MetaDataManagerTest {
         final MetaData metaData = createMetaData(DataValue.class);
         creator.addMetaData(metaData, false);
         final MetaDataManager mngr = creator.create();
-        final Optional<? extends MetaData> optionalMetaData = mngr.getForType(metaData.getClass());
+        final Optional<? extends MetaData> optionalMetaData = mngr.getMetaDataOfType(metaData.getClass());
         assertTrue(optionalMetaData.isPresent());
         assertEquals(metaData, optionalMetaData.get());
     }

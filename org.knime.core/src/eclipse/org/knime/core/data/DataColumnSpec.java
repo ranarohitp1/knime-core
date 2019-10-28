@@ -286,7 +286,7 @@ public final class DataColumnSpec {
      * @since 4.1
      */
     public <M extends MetaData> Optional<M> getMetaDataOfType(final Class<M> metaDataClass) {
-        return m_metaDataManager.getForType(metaDataClass);
+        return m_metaDataManager.getMetaDataOfType(metaDataClass);
     }
 
     /**

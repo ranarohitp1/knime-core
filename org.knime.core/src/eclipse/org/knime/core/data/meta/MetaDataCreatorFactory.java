@@ -56,7 +56,7 @@ import org.knime.core.data.DataValue;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface MetaDataCreatorFactory {
+public interface MetaDataCreatorFactory <T extends MetaData> {
 
     /**
      * @return the type of {@link DataValue} the {@link MetaData} associated with this factory is concerned with
@@ -66,5 +66,5 @@ public interface MetaDataCreatorFactory {
     /**
      * @return a fresh {@link MetaDataCreator} instance
      */
-    MetaDataCreator create();
+    MetaDataCreator<T> create();
 }

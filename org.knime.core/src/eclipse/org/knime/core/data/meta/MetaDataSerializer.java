@@ -60,7 +60,7 @@ import org.knime.core.node.config.ConfigWO;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public interface MetaDataSerializer {
+public interface MetaDataSerializer <T extends MetaData> {
 
     /**
      * Saves {@link MetaData metaData} to {@link ConfigWO config}.
@@ -68,7 +68,7 @@ public interface MetaDataSerializer {
      * @param metaData the {@link MetaData} to save
      * @param config {@link ConfigWO} to write to
      */
-    void save(final MetaData metaData, final ConfigWO config);
+    void save(final T metaData, final ConfigWO config);
 
     /**
      * Creates a new {@link MetaData} from the values stored in {@link ConfigRO} or fails with an
@@ -78,5 +78,7 @@ public interface MetaDataSerializer {
      * @return the {@link MetaData} corresponding to the values stored in {@link ConfigRO config}
      * @throws InvalidSettingsException if the values in {@link ConfigRO config} are invalid
      */
-    MetaData load(final ConfigRO config) throws InvalidSettingsException;
+    T load(final ConfigRO config) throws InvalidSettingsException;
+
+    Class<T> getMetaDataClass();
 }
