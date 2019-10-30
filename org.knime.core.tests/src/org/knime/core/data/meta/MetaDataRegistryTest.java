@@ -44,65 +44,54 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 10, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Oct 29, 2019 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.core.data.meta;
 
-import org.knime.core.data.DataCell;
-import org.knime.core.data.DataTableDomainCreator;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Collection;
+
+import org.hamcrest.Matchers;
+import org.junit.Test;
+import org.knime.core.data.def.StringCell;
+import org.knime.core.data.meta.TestMetaData.TestMetaDataCreator;
+import org.knime.core.data.meta.TestMetaData.TestMetaDataSerializer;
 
 /**
- * Allows to create {@link MetaData} from actual data e.g. in the {@link DataTableDomainCreator}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- * @param <T> the type of {@link MetaData} this {@link MetaDataCreator} creates
- * @since 4.1
  */
-public interface MetaDataCreator<T extends MetaData> extends MetaDataFramework<T> {
+public class MetaDataRegistryTest {
 
-    /**
-     * Updates the meta data according to the contents of cell.</br>
-     * Missing values and incompatible cell types (e.g. in a transposed table) must not cause
-     * an exception and should simply be ignored.
-     *
-     * @param cell whose information should (if possible) be included in the meta data
-     */
-    void update(final DataCell cell);
-
-    /**
-     * Creates the {@link MetaData} corresponding to the current state of this creator.</br>
-     * It must be possible to call this method multiple times even if the creator is still updated and
-     * {@link MetaData metaData objects} created in different calls must be independent from each other
-     * i.e. they may not share any mutable objects.
-     *
-     * @return the {@link MetaData} containing the meta data at the current state of this creator
-     */
-    T create();
-
-    /**
-     * Creates a deep copy of this creator i.e. calling update on the copied creator
-     * has no effect on this creator.
-     *
-     * @return a deep copy of this creator
-     */
-    MetaDataCreator<T> copy();
-
-    /**
-     * Merges two {@link MetaDataCreator creators} by including the data
-     * from <b>other</b> into this creator.
-     *
-     * @param other the creator to merge into this creator
-     * @return this creator for method chaining
-     */
-    default MetaDataCreator<T> merge(final MetaDataCreator<T> other) {
-        return merge(other.create());
+    @Test
+    public void testHasMetaData() throws Exception {
+        assertTrue(
+            "The registered TestMetaData applies to StringValue therefore "
+                + "hasMetaData must return true for StringCell.TYPE.",
+            MetaDataRegistry.INSTANCE.hasMetaData(StringCell.TYPE));
     }
 
-    /**
-     * Merges the information from {@link MetaData other} into this creator.
-     *
-     * @param other the {@link MetaData} to merge into this creator
-     * @return this creator for method chaining
-     */
-    MetaDataCreator<T> merge(final T other);
+    @Test
+    public void testGetCreators() throws Exception {
+        final Collection<MetaDataCreator<?>> creators = MetaDataRegistry.INSTANCE.getCreators(StringCell.TYPE);
+        assertTrue("There should be exactly one instance of TestMetaDataCreator",
+            creators.stream().filter(c -> c instanceof TestMetaDataCreator).count() == 1);
+    }
+
+    @Test
+    public void testGetSerializerWithClass() throws Exception {
+        final MetaDataSerializer<TestMetaData> serializer = MetaDataRegistry.INSTANCE.getSerializer(TestMetaData.class);
+        assertNotNull(serializer);
+        assertThat(serializer, Matchers.instanceOf(TestMetaDataSerializer.class));
+    }
+
+    @Test
+    public void testGetSerializerWithClassName() throws Exception {
+        final MetaDataSerializer<?> serializer = MetaDataRegistry.INSTANCE.getSerializer(TestMetaData.class.getName());
+        assertNotNull(serializer);
+        assertThat(serializer, Matchers.instanceOf(TestMetaDataSerializer.class));
+    }
 }

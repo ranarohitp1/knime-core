@@ -49,7 +49,6 @@
 package org.knime.core.data.meta;
 
 import org.knime.core.data.DataValue;
-import org.knime.core.node.config.ConfigWO;
 
 /**
  * TODO rewrite
@@ -62,12 +61,6 @@ import org.knime.core.node.config.ConfigWO;
 public interface MetaData {
 
     /**
-     * Saves the meta data to {@link ConfigWO config}.
-     * @param config to save to
-     */
-    void save(final ConfigWO config);
-
-    /**
      * Merges the contents of <b>this</b> and <b>other</b> to create a new(!) {@link MetaData} object.
      * This method should not modify <b>this</b> or <b>other</b>.
      *
@@ -77,6 +70,8 @@ public interface MetaData {
      * @param other the {@link MetaData} to merge with
      * @return a new {@link MetaData} object that contains the merged information of <b>this</b> and <b>other</b>
      */
-    MetaData merge(MetaData other);
+//    MetaData merge(MetaData other);
+
+//    Class<? extends MetaData> getMetaDataClass();
 
 }

@@ -100,55 +100,40 @@ public final class NominalDistributionValueMetaData implements MetaData {
         return Collections.unmodifiableSet(m_values);
     }
 
-    @Override
-    public void save(final ConfigWO config) {
-        config.addDataCellArray(CFG_VALUES, m_values.toArray(new DataCell[0]));
-    }
-
-    @Override
-    public NominalDistributionValueMetaData merge(final MetaData other) {
-        // TODO informative error message
-        CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaData, "Incompatible meta data type %s",
-            other.getClass());
-        final NominalDistributionValueMetaData otherMeta = (NominalDistributionValueMetaData)other;
-        if (other == this) {
-            return this;
-        } else if (m_values.equals(otherMeta.getValues())) {
-            return this;
-        } else {
-            final LinkedHashSet<String> mergedValues = new LinkedHashSet<>();
-            mergedValues.addAll(m_values);
-            mergedValues.addAll(otherMeta.getValues());
-            return new NominalDistributionValueMetaData(mergedValues);
-        }
-    }
-
     /**
      * Serializer for {@link NominalDistributionValueMetaData} objects.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static final class NominalDistributionValueMetaDataSerializer implements MetaDataSerializer {
+    public static final class NominalDistributionValueMetaDataSerializer
+        implements MetaDataSerializer<NominalDistributionValueMetaData> {
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public void save(final MetaData metaData, final ConfigWO config) {
-            CheckUtils.checkState(metaData instanceof NominalDistributionValueMetaData,
-                "Unexpected meta data type '%s' encountered.", metaData.getClass().getName());
-            final NominalDistributionValueMetaData meta = (NominalDistributionValueMetaData)metaData;
-            config.addDataCellArray(CFG_VALUES, meta.m_values.toArray(new DataCell[0]));
+        public void save(final NominalDistributionValueMetaData metaData, final ConfigWO config) {
+            CheckUtils.checkNotNull(metaData, "The meta data provided to the serializer was null.");
+            config.addStringArray(CFG_VALUES, metaData.m_values.toArray(new String[0]));
         }
 
         /**
          * {@inheritDoc}
+         *
          * @throws InvalidSettingsException
          */
         @Override
-        public MetaData load(final ConfigRO config) throws InvalidSettingsException {
+        public NominalDistributionValueMetaData load(final ConfigRO config) throws InvalidSettingsException {
             final String[] values = config.getStringArray(CFG_VALUES);
             return new NominalDistributionValueMetaData(values);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public Class<NominalDistributionValueMetaData> getMetaDataClass() {
+            return NominalDistributionValueMetaData.class;
         }
 
     }

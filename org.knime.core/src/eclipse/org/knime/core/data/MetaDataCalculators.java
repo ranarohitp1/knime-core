@@ -74,14 +74,48 @@ final class MetaDataCalculators {
     private MetaDataCalculators() {
     }
 
+    /**
+     * Interface for objects that can be used to create {@link MetaData} from actual data.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
     interface MetaDataCalculator {
+
+        /**
+         * Updates the meta data with the contents in {@link DataCell cell} provided it is relevant for this meta data
+         * calculator.<br>
+         * Note that the calculator should ignore irrelevant cells but not fail!
+         *
+         * @param cell the {@link DataCell} whose information should be incorporated into the meta data
+         */
         void update(final DataCell cell);
 
+        /**
+         * Merges the meta data contained in {@link MetaDataCalculator other} into this one.<br/>
+         *
+         * @param other the {@link MetaDataCalculator} to merge with this one
+         */
         void merge(final MetaDataCalculator other);
 
+        /**
+         * Creates a {@link List} of {@link MetaData} object corresponding to the information observed so far.<br/>
+         * The returned {@link MetaData} must be independent of this {@link MetaDataCalculator} and subsequent calls to
+         * {@link MetaDataCalculator#update(DataCell)} are allowed and must not change already created {@link MetaData}.
+         *
+         * @return the list of {@link MetaData} corresponding to the information observed so far
+         */
         List<MetaData> createMetaData();
     }
 
+    /**
+     * Creates a {@link MetaDataCalculator} for {@link DataColumnSpec colSpec} and the provided options.
+     *
+     * @param colSpec the {@link DataColumnSpec} for which to create a {@link MetaDataCalculator}
+     * @param createMetaData whether new {@link MetaData} should be created from the data
+     * @param dropMetaData whether the {@link MetaData} stored in {@link DataColumnSpec colSpec} should be dropped
+     * @return a {@link MetaDataCalculator} for {@link DataColumnSpec colSpec} that behaves according to the provided
+     *         options
+     */
     static MetaDataCalculator createCalculator(final DataColumnSpec colSpec, final boolean createMetaData,
         final boolean dropMetaData) {
         if (dropMetaData && !createMetaData) {
@@ -90,6 +124,13 @@ final class MetaDataCalculators {
         return new MetaDataCalculatorImpl(colSpec, !dropMetaData, createMetaData);
     }
 
+    /**
+     * Creates a copy of {@link MetaDataCalculator calculator} that contains the same information after the method
+     * returns but is independent of {@link MetaDataCalculator calculator}.
+     *
+     * @param calculator the {@link MetaDataCalculator} to copy
+     * @return a copy of {@link MetaDataCalculator calculator}
+     */
     static MetaDataCalculator copy(final MetaDataCalculator calculator) {
         if (calculator == NullMetaDataCalculator.INSTANCE) {
             return NullMetaDataCalculator.INSTANCE;
@@ -103,34 +144,24 @@ final class MetaDataCalculators {
     /**
      * A dummy implementation of {@link MetaDataCalculator} that doesn't actually do any computation. Note that
      * attempting to merge the singleton with any object other than itself will cause an assertion error since this
-     * indicates an implementation error.
+     * indicates an implementation problem.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     private enum NullMetaDataCalculator implements MetaDataCalculator {
             INSTANCE;
 
-        /**
-         * {@inheritDoc}
-         */
         @Override
         public void update(final DataCell cell) {
             // do nothing
         }
 
-        /**
-         * {@inheritDoc}
-         */
         @Override
         public void merge(final MetaDataCalculator other) {
             assert other == this : "Attempting to merge NullMetaDataCalculator with anything but itself."
                 + "This indicates an implementation error.";
-            // do nothing
         }
 
-        /**
-         * {@inheritDoc}
-         */
         @Override
         public List<MetaData> createMetaData() {
             return Collections.emptyList();
@@ -154,9 +185,8 @@ final class MetaDataCalculators {
             m_metaDataCreators = MetaDataRegistry.INSTANCE.getCreators(spec.getType());
             m_updateMetaData = updateMetaData;
             if (initializeWithSpec) {
-                m_metaDataCreators.forEach(m -> merge(m,
-                    spec.getMetaDataOfType(m.getMetaDataClass()).orElseThrow(() -> new IllegalStateException(
-                        String.format("No meta data for type %s in column %s.", m.getClass(), spec)))));
+                m_metaDataCreators
+                    .forEach(m -> spec.getMetaDataOfType(m.getMetaDataClass()).ifPresent(o -> merge(m, o)));
             }
         }
 

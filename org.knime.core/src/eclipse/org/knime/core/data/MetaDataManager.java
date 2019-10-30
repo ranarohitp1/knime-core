@@ -52,10 +52,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.MetaDataCreator;
 import org.knime.core.data.meta.MetaDataRegistry;
 import org.knime.core.data.meta.MetaDataSerializer;
 import org.knime.core.node.InvalidSettingsException;
@@ -115,12 +115,6 @@ final class MetaDataManager {
         return new MetaDataManager(metaDataMap);
     }
 
-    MetaDataManager merge(final MetaDataManager other) {
-        final Creator creator = new Creator(this);
-        creator.merge(other);
-        return creator.create();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -143,7 +137,7 @@ final class MetaDataManager {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     static final class Creator {
-        private final Map<Class<? extends MetaData>, MetaData> m_valueMetaDataMap;
+        private final Map<Class<? extends MetaData>, MetaDataCreator<?>> m_valueMetaDataMap;
 
         Creator() {
             m_valueMetaDataMap = new HashMap<>();
@@ -151,24 +145,44 @@ final class MetaDataManager {
 
         Creator(final MetaDataManager metaData) {
             m_valueMetaDataMap = metaData.m_valueMetaDataMap.values().stream()
-                .collect(Collectors.toMap(MetaData::getClass, Function.identity()));
+                .collect(Collectors.toMap(MetaData::getClass, MetaDataRegistry.INSTANCE::getCreator));
         }
 
-        void addMetaData(final MetaData metaData, final boolean overwrite) {
+        private <T extends MetaData> MetaDataCreator<T> getCreator(final Class<T> metaDataClass) {
+            final MetaDataCreator<?> creator =
+                m_valueMetaDataMap.computeIfAbsent(metaDataClass, MetaDataRegistry.INSTANCE::getCreator);
+            CheckUtils.checkState(creator.getMetaDataClass().equals(metaDataClass), "Illegal Mapping");
+            @SuppressWarnings("unchecked") // explicitly checked above
+            final MetaDataCreator<T> typedCreator = (MetaDataCreator<T>)creator;
+            return typedCreator;
+        }
+
+        <T extends MetaData> void addMetaData(final T metaData, final boolean overwrite) {
+            final Class<T> metaDataClass = MetaDataRegistry.INSTANCE.getClass(metaData);
             if (overwrite) {
-                m_valueMetaDataMap.put(metaData.getClass(), metaData);
+                m_valueMetaDataMap.put(metaDataClass, MetaDataRegistry.INSTANCE.getCreator(metaData));
             } else {
-                m_valueMetaDataMap.merge(metaData.getClass(), metaData, (m1, m2) -> m1.merge(m2));
+                final MetaDataCreator<T> creator = getCreator(metaDataClass);
+                creator.merge(metaData);
             }
         }
 
         void merge(final MetaDataManager metaData) {
-            metaData.m_valueMetaDataMap.values()
-                .forEach(m -> m_valueMetaDataMap.merge(m.getClass(), m, (m1, m2) -> m1.merge(m2)));
+            metaData.m_valueMetaDataMap.values().forEach(this::merge);
+        }
+
+        private <M extends MetaData> void merge(final M metaData) {
+            mergeHelper(metaData);
+        }
+
+        private <M extends MetaData> void mergeHelper(final M metaData) {
+            m_valueMetaDataMap.merge(metaData.getClass(),
+                MetaDataRegistry.INSTANCE.getCreator(metaData), MetaDataCreator::merge);
         }
 
         MetaDataManager create() {
-            return new MetaDataManager(new HashMap<>(m_valueMetaDataMap));
+            return new MetaDataManager(m_valueMetaDataMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().create())));
         }
     }
 }

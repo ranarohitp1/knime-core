@@ -51,7 +51,6 @@ package org.knime.core.data.probability;
 import java.util.LinkedHashSet;
 
 import org.knime.core.data.DataCell;
-import org.knime.core.data.meta.MetaData;
 import org.knime.core.data.meta.MetaDataCreator;
 import org.knime.core.node.util.CheckUtils;
 
@@ -62,7 +61,7 @@ import org.knime.core.node.util.CheckUtils;
  * @since 4.1
  */
 public final class NominalDistributionValueMetaDataCreator
-    implements MetaDataCreator {
+    implements MetaDataCreator<NominalDistributionValueMetaData> {
 
     private final LinkedHashSet<String> m_values;
 
@@ -100,7 +99,7 @@ public final class NominalDistributionValueMetaDataCreator
      * {@inheritDoc}
      */
     @Override
-    public MetaDataCreator copy() {
+    public NominalDistributionValueMetaDataCreator copy() {
         return new NominalDistributionValueMetaDataCreator(m_values);
     }
 
@@ -108,23 +107,30 @@ public final class NominalDistributionValueMetaDataCreator
      * {@inheritDoc}
      */
     @Override
-    public void merge(final MetaDataCreator other) {
+    public NominalDistributionValueMetaDataCreator merge(final MetaDataCreator<NominalDistributionValueMetaData> other) {
         CheckUtils.checkArgument(other instanceof NominalDistributionValueMetaDataCreator,
             "Can only merge with NominalDistributionValueMetaDataCreator but received object of type %s.",
             other.getClass().getName());
         final NominalDistributionValueMetaDataCreator otherCreator = (NominalDistributionValueMetaDataCreator)other;
         m_values.addAll(otherCreator.m_values);
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void merge(final MetaData other) {
-        CheckUtils.checkState(other instanceof NominalDistributionValueMetaData,
-            "Unsupported meta data object of class %s encountered.", other.getClass().getName());
-        final NominalDistributionValueMetaData metaData = (NominalDistributionValueMetaData)other;
-        metaData.getValues().forEach(m_values::add);
+    public NominalDistributionValueMetaDataCreator merge(final NominalDistributionValueMetaData other) {
+        other.getValues().forEach(m_values::add);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<NominalDistributionValueMetaData> getMetaDataClass() {
+        return NominalDistributionValueMetaData.class;
     }
 
 }

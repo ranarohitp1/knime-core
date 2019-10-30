@@ -50,12 +50,12 @@ package org.knime.core.data;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import java.util.Optional;
 
 import org.junit.Test;
-import org.knime.core.data.meta.MetaData;
+import org.knime.core.data.meta.TestMetaData;
+import org.knime.core.data.meta.TestMetaData.TestMetaDataCreator;
 
 /**
  *
@@ -63,23 +63,40 @@ import org.knime.core.data.meta.MetaData;
  */
 public class MetaDataManagerTest {
 
-    private static <T extends DataValue> MetaData createMetaData(final Class<T> valueClass) {
-        return mock(MetaData.class);
-    }
+    private static final TestMetaData TEST_META_DATA = new TestMetaData("test");
 
     @Test
     public void testCreation() throws Exception {
         final MetaDataManager.Creator creator = new MetaDataManager.Creator();
-        final MetaData metaData = createMetaData(DataValue.class);
-        creator.addMetaData(metaData, false);
+        creator.addMetaData(TEST_META_DATA, false);
         final MetaDataManager mngr = creator.create();
-        final Optional<? extends MetaData> optionalMetaData = mngr.getMetaDataOfType(metaData.getClass());
+        final Optional<TestMetaData> optionalMetaData = mngr.getMetaDataOfType(TestMetaData.class);
         assertTrue(optionalMetaData.isPresent());
-        assertEquals(metaData, optionalMetaData.get());
+        assertEquals(TEST_META_DATA, optionalMetaData.get());
     }
 
     @Test
     public void testCreatorAddMetaDataOverwrite() throws Exception {
-        final MetaData first = createMetaData(DataValue.class);
+        final MetaDataManager.Creator creator = new MetaDataManager.Creator();
+        creator.addMetaData(TEST_META_DATA, true);
+        final TestMetaData overwritingMetaData = new TestMetaData("overwritten");
+        creator.addMetaData(overwritingMetaData, true);
+        final MetaDataManager mngr = creator.create();
+        final Optional<TestMetaData> optionalMetaData = mngr.getMetaDataOfType(TestMetaData.class);
+        assertTrue(optionalMetaData.isPresent());
+        assertEquals(overwritingMetaData, optionalMetaData.get());
+    }
+
+    @Test
+    public void testCreatorAddMetaDataMerge() throws Exception {
+        final MetaDataManager.Creator creator = new MetaDataManager.Creator();
+        creator.addMetaData(TEST_META_DATA, true);
+        final TestMetaData newMetaData = new TestMetaData("overwritten");
+        creator.addMetaData(newMetaData, false);
+        TestMetaData merged = new TestMetaDataCreator().merge(TEST_META_DATA).merge(newMetaData).create();
+        final MetaDataManager mngr = creator.create();
+        final Optional<TestMetaData> optionalMetaData = mngr.getMetaDataOfType(TestMetaData.class);
+        assertTrue(optionalMetaData.isPresent());
+        assertEquals(merged, optionalMetaData.get());
     }
 }

@@ -54,9 +54,10 @@ import org.knime.core.data.DataValue;
  * Factory for {@link MetaDataCreator creators} of a particular {@link MetaData} type.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @param <T> the type of {@link MetaData} this {@link MetaDataCreatorFactory} is concerned with
  * @since 4.1
  */
-public interface MetaDataCreatorFactory <T extends MetaData> {
+public interface MetaDataCreatorFactory <T extends MetaData> extends MetaDataFramework<T> {
 
     /**
      * @return the type of {@link DataValue} the {@link MetaData} associated with this factory is concerned with
@@ -67,4 +68,5 @@ public interface MetaDataCreatorFactory <T extends MetaData> {
      * @return a fresh {@link MetaDataCreator} instance
      */
     MetaDataCreator<T> create();
+
 }

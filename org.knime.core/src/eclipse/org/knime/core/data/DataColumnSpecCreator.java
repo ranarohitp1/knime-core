@@ -50,6 +50,7 @@
 package org.knime.core.data;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -188,6 +189,26 @@ public final class DataColumnSpecCreator {
     }
 
     /**
+     * Options for the {@link DataColumnSpecCreator#merge(DataColumnSpec, EnumSet)} method.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     * @since 4.1
+     */
+    public enum MergeOptions {
+            /**
+             * Allow the data type of the merged columns to differ. In this case the {@link DataColumnSpecCreator} will
+             * have the common super-type returned by {@link DataType#getCommonSuperType(DataType, DataType)} after the
+             * merge is completed.
+             */
+            ALLOW_VARYING_TYPES,
+            /**
+             * Allow the element names of the merged columns to differ. If this option is used, the element names of the
+             * second column are dropped (TODO discuss with Bernd/Mark if this is the correct behavior).
+             */
+            ALLOW_VARYING_ELEMENT_NAMES;
+    }
+
+    /**
      * Merges the existing {@link DataColumnSpec} with a second
      * {@link DataColumnSpec}.
      * If <b>allowDifferentTypes</b> is set to true, the common supertype of this {@link DataColumnSpecCreator}
@@ -197,8 +218,7 @@ public final class DataColumnSpecCreator {
      * Color, Shape and Size-Handlers are compared (must be equal).
      *
      * @param cspec2 the second {@link DataColumnSpec}.
-     * @param allowDifferentTypes if set to true, varying types are supported and a common super type is determined in
-     *            this case
+     * @param options
      *
      * @see DataTableSpec#mergeDataTableSpecs(DataTableSpec...)
      * @throws IllegalArgumentException if the structure (name and depending on <b>allowDifferentTypes</b> type) does
@@ -208,10 +228,11 @@ public final class DataColumnSpecCreator {
      *
      * @since 4.1
      */
-    public void merge(final DataColumnSpec cspec2, final boolean allowDifferentTypes) {
-        CheckUtils.checkArgument(isCompatible(cspec2, allowDifferentTypes),
+    public void merge(final DataColumnSpec cspec2, final Set<MergeOptions> options) {
+        final boolean allowVaryingTypes = options.contains(MergeOptions.ALLOW_VARYING_TYPES);
+        CheckUtils.checkArgument(isCompatible(cspec2, allowVaryingTypes),
             "Structures of DataColumnSpecs do not match.");
-        if (allowDifferentTypes) {
+        if (allowVaryingTypes) {
             updateType(cspec2.getType());
         }
         mergeDomains(cspec2.getDomain());
@@ -221,14 +242,14 @@ public final class DataColumnSpecCreator {
         mergeSizeHandlers(cspec2.getSizeHandler());
         mergeFilterHandlers(cspec2.getFilterHandler().orElse(null));
         mergeProperties(cspec2.getProperties());
-        mergeElementNames(cspec2.getElementNames());
+        mergeElementNames(cspec2.getElementNames(), options.contains(MergeOptions.ALLOW_VARYING_ELEMENT_NAMES));
     }
 
-    private void mergeElementNames(final List<String> elementNames) {
+    private void mergeElementNames(final List<String> elementNames, final boolean allowVaryingElementNames) {
         String[] elNames2Array = elementNames.toArray(new String[elementNames.size()]);
         String[] elNamesArray =
             m_elementNames == null ? new String[]{m_name} : m_elementNames;
-        if (!Arrays.deepEquals(elNamesArray, elNames2Array)) {
+        if (!Arrays.deepEquals(elNamesArray, elNames2Array) && !allowVaryingElementNames) {
             throw new IllegalArgumentException("Element names are not equal");
         }
     }
@@ -348,7 +369,7 @@ public final class DataColumnSpecCreator {
      */
     public void merge(final DataColumnSpec cspec2) {
         // TODO discuss! Only called by DataTableSpec#mergeDataTableSpecs (at least in core and base)
-        merge(cspec2, false);
+        merge(cspec2, EnumSet.noneOf(MergeOptions.class));
     }
 
     /**

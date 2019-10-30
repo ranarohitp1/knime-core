@@ -435,7 +435,7 @@ public final class DataColumnSpec {
         }
         final MetaDataManager metaDataManager;
         if (config.containsKey(CFG_META_DATA)) {
-            metaDataManager = MetaDataManager.load(config);
+            metaDataManager = MetaDataManager.load(config.getConfig(CFG_META_DATA));
         } else {
             // still create an empty meta data object to avoid issues with NPEs
             metaDataManager = MetaDataManager.EMPTY;

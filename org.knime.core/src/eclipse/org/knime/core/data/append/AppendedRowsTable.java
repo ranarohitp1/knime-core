@@ -45,11 +45,13 @@
  */
 package org.knime.core.data.append;
 
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
+import org.knime.core.data.DataColumnSpecCreator.MergeOptions;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
@@ -76,6 +78,12 @@ import org.knime.core.util.Pair;
  * @since 3.1
  */
 public class AppendedRowsTable implements DataTable {
+
+    /**
+     * The options {@link DataColumnSpecCreator#merge(DataColumnSpec, java.util.Set)} is called with.
+     */
+    private static final EnumSet<MergeOptions> MERGE_OPTIONS =
+        EnumSet.of(MergeOptions.ALLOW_VARYING_TYPES, MergeOptions.ALLOW_VARYING_ELEMENT_NAMES);
 
     private static final NodeLogger LOGGER = NodeLogger
             .getLogger(AppendedRowsTable.class);
@@ -229,12 +237,13 @@ public class AppendedRowsTable implements DataTable {
                 }
             }
         }
-        return new DataTableSpec(colCreatorSet.values().toArray(new DataColumnSpec[0]));
+        return new DataTableSpec(
+            colCreatorSet.values().stream().map(DataColumnSpecCreator::createSpec).toArray(DataColumnSpec[]::new));
     }
 
     private static void mergeSpec(final DataColumnSpec colSpec, final DataColumnSpecCreator colCreator) {
         final DataType oldType = colCreator.getType();
-        colCreator.merge(colSpec, true);
+        colCreator.merge(colSpec, MERGE_OPTIONS);
         // that shouldn't happen though, eh: shit happens.
         DataType type = colCreator.getType();
         if (!oldType.equals(type)) {

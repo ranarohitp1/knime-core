@@ -58,9 +58,10 @@ import org.knime.core.node.config.ConfigWO;
  * private fields and constructors of its associated {@link MetaData} class.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @param <T> the type of {@link MetaData} this {@link MetaDataSerializer} serializes
  * @since 4.1
  */
-public interface MetaDataSerializer <T extends MetaData> {
+public interface MetaDataSerializer <T extends MetaData> extends MetaDataFramework<T> {
 
     /**
      * Saves {@link MetaData metaData} to {@link ConfigWO config}.
@@ -80,5 +81,4 @@ public interface MetaDataSerializer <T extends MetaData> {
      */
     T load(final ConfigRO config) throws InvalidSettingsException;
 
-    Class<T> getMetaDataClass();
 }

@@ -51,8 +51,10 @@ package org.knime.core.data.meta;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
@@ -84,9 +86,11 @@ public enum MetaDataRegistry {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(MetaDataRegistry.class);
 
-    private final Map<String, MetaDataSerializer<?>> m_serializers;
+    private final Map<Class<? extends MetaData>, MetaDataSerializer<?>> m_serializers;
 
-    private final Collection<MetaDataCreatorFactory<?>> m_creatorFactories;
+    private final Map<Class<? extends MetaData>, MetaDataCreatorFactory<?>> m_creatorFactories;
+
+    private Map<String, Class<? extends MetaData>> m_metaDataClasses;
 
     private MetaDataRegistry() {
         final IExtensionPoint point = getExtensionPoint();
@@ -94,18 +98,59 @@ public enum MetaDataRegistry {
             .flatMap(Arrays::stream).filter(e -> e.getAttribute("creatorFactory") != null)
             .map(e -> createInstance(e, "creatorFactory", MetaDataCreatorFactory.class,
                 "Could not create meta data creator factory from plug-in '%s'", e.getNamespaceIdentifier()))
-            .filter(Objects::nonNull).collect(Collectors.toList());
+            .filter(Objects::nonNull).collect(Collectors.toMap(MetaDataCreatorFactory::getMetaDataClass,
+                Function.identity(), MetaDataRegistry::mergeCreatorFactories, LinkedHashMap::new));
 
         m_serializers = new HashMap<>();
+        m_metaDataClasses = new HashMap<>();
         for (IExtension ext : point.getExtensions()) {
             for (IConfigurationElement config : ext.getConfigurationElements()) {
-                final String metaDataClass = config.getAttribute("metaData");
+                final String metaDataClassName = config.getAttribute("metaData");
+                final Class<? extends MetaData> metaDataClass = getMetaDataClass(metaDataClassName);
+                if (metaDataClass == null) {
+                    continue;
+                }
+                m_metaDataClasses.put(metaDataClassName, metaDataClass);
                 final MetaDataSerializer<?> serializer = createInstance(config, "serializer", MetaDataSerializer.class,
-                    "Could not create serializer for meta data '%s' from plug-in '%s'.", metaDataClass,
+                    "Could not create serializer for meta data '%s' from plug-in '%s'.", metaDataClassName,
                     config.getNamespaceIdentifier());
                 m_serializers.put(metaDataClass, serializer);
             }
         }
+
+    }
+
+    private static Class<? extends MetaData> getMetaDataClass(final String name) {
+        final Class<?> clazz;
+        try {
+            clazz = Class.forName(name);
+        } catch (ClassNotFoundException ex) {
+            LOGGER.error(String.format("The class declaration for the meta data class '%s' could not be found.", name),
+                ex);
+            return null;
+        }
+        return clazz.asSubclass(MetaData.class);
+    }
+
+    public <M extends MetaData> Class<M> getClass(final M metaData) {
+        final String name = metaData.getClass().getName();
+        final Class<? extends MetaData> wildcardClass = m_metaDataClasses.get(name);
+        CheckUtils.checkState(wildcardClass != null,
+            "The meta data class '%s' is not registered at the MetaDataType extension point.", name);
+        // m_metaDataClasses maps from class names to there class instance
+        @SuppressWarnings("unchecked")
+        final Class<M> typedClass = (Class<M>)wildcardClass;
+        return typedClass;
+    }
+
+    private static MetaDataCreatorFactory<?> mergeCreatorFactories(final MetaDataCreatorFactory<?> first,
+        final MetaDataCreatorFactory<?> second) {
+        assert first.getMetaDataClass().equals(second.getMetaDataClass());
+        LOGGER.errorWithFormat(
+            "Two meta data factories for the meta data '%s' registered."
+                + "This indicates an implementation error and only the first one is kept.",
+            first.getMetaDataClass().getName());
+        return first;
     }
 
     private static <T> T createInstance(final IConfigurationElement configElement, final String key,
@@ -116,6 +161,37 @@ public enum MetaDataRegistry {
             LOGGER.error(String.format(format + ": " + ex.getMessage(), args), ex);
             return null;
         }
+    }
+
+    public <T extends MetaData> MetaDataCreator<T> getCreator(final Class<T> metaDataClass) {
+        final MetaDataCreatorFactory<T> factory = retrieveTyped(m_creatorFactories, metaDataClass);
+        return factory.create();
+    }
+
+    private interface RefObj<T> {
+        Class<T> getRefClass();
+    }
+
+    private static <M extends MetaData, F extends MetaDataFramework<M>> F retrieveTyped(
+        final Map<Class<? extends MetaData>, ? extends MetaDataFramework<?>> map, final Class<M> metaDataClass) {
+        MetaDataFramework<?> wildcardFrameworkObject = map.get(metaDataClass);
+        CheckUtils.checkState(wildcardFrameworkObject != null, "Unregistered meta data '%s' encountered.",
+            metaDataClass.getName());
+        return checkAndCast(metaDataClass, wildcardFrameworkObject);
+    }
+
+    private static <M extends MetaData, F extends MetaDataFramework<M>> F checkAndCast(final Class<M> metaDataClass,
+        final MetaDataFramework<?> frameworkObject) {
+        CheckUtils.checkState(metaDataClass.equals(frameworkObject.getMetaDataClass()), "Illegal mapping detected.");
+        // the check ensures that frameworkObject indeed applies to M
+        @SuppressWarnings("unchecked")
+        final F typedFrameworkObject = (F)frameworkObject;
+        return typedFrameworkObject;
+    }
+
+    public <T extends MetaData> MetaDataCreator<T> getCreator(final T metaData) {
+        Class<T> metaDataClass = getClass(metaData);
+        return getCreator(metaDataClass).merge(metaData);
     }
 
     /**
@@ -129,7 +205,7 @@ public enum MetaDataRegistry {
     public Collection<MetaDataCreator<?>> getCreators(final DataType type) {
         CheckUtils.checkNotNull(type);
         return type.getValueClasses().stream()
-            .flatMap(d -> m_creatorFactories.stream().filter(m -> m.getDataValueClass().isAssignableFrom(d)))
+            .flatMap(d -> m_creatorFactories.values().stream().filter(m -> m.getDataValueClass().isAssignableFrom(d)))
             .map(MetaDataCreatorFactory::create).collect(Collectors.toList());
     }
 
@@ -141,8 +217,8 @@ public enum MetaDataRegistry {
      *         {@link DataType type}
      */
     public boolean hasMetaData(final DataType type) {
-        return type.getValueClasses().stream()
-            .anyMatch(d -> m_creatorFactories.stream().anyMatch(m -> m.getDataValueClass().isAssignableFrom(d)));
+        return type.getValueClasses().stream().anyMatch(
+            d -> m_creatorFactories.values().stream().anyMatch(m -> m.getDataValueClass().isAssignableFrom(d)));
     }
 
     /**
@@ -151,15 +227,8 @@ public enum MetaDataRegistry {
      * @param metaDataClass the class of {@link MetaData} the serializer is required for
      * @return the serializer for {@link MetaData} of class <b>metaDataClass</b>
      */
-    @SuppressWarnings("null") // we explicitly check for null
     public <T extends MetaData> MetaDataSerializer<T> getSerializer(final Class<T> metaDataClass) {
-        final MetaDataSerializer<?> wildCardSerializer = m_serializers.get(metaDataClass.getName());
-        CheckUtils.checkState(wildCardSerializer != null, "No serializer registered for meta data class %s.",
-            metaDataClass.getName());
-        assert wildCardSerializer.getMetaDataClass().isAssignableFrom(metaDataClass);
-        @SuppressWarnings("unchecked") // the above assertion ensures wildCardSerializer is a MetaDataSerializer<T>
-        final MetaDataSerializer<T> typedSerializer = (MetaDataSerializer<T>)wildCardSerializer;
-        return typedSerializer;
+        return retrieveTyped(m_serializers, metaDataClass);
     }
 
     /**
@@ -169,7 +238,7 @@ public enum MetaDataRegistry {
      * @return the serializer for {@link MetaData} with class name <b>metaDataClassName</b>
      */
     public MetaDataSerializer<?> getSerializer(final String metaDataClassName) {
-        return m_serializers.get(metaDataClassName);
+        return m_serializers.get(getMetaDataClass(metaDataClassName));
     }
 
     private static IExtensionPoint getExtensionPoint() {

@@ -115,7 +115,7 @@ public class DataTableDomainCreator {
         final DomainCreatorColumnSelection domainValuesColumnSelection,
         final DomainCreatorColumnSelection domainMinMaxColumnSelection) {
         this(inputSpec, domainValuesColumnSelection, domainMinMaxColumnSelection,
-            DomainCreatorColumnSelection.create(c -> true, c -> false));
+            DomainCreatorColumnSelection.create(c -> true, c -> true));
     }
 
     /**

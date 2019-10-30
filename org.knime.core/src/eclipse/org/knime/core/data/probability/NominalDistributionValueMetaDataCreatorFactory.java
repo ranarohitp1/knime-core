@@ -57,13 +57,13 @@ import org.knime.core.data.meta.MetaDataCreatorFactory;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
-public final class NominalDistributionValueMetaDataCreatorFactory implements MetaDataCreatorFactory {
+public final class NominalDistributionValueMetaDataCreatorFactory implements MetaDataCreatorFactory<NominalDistributionValueMetaData> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public MetaDataCreator create() {
+    public MetaDataCreator<NominalDistributionValueMetaData> create() {
         return new NominalDistributionValueMetaDataCreator();
     }
 
@@ -73,6 +73,14 @@ public final class NominalDistributionValueMetaDataCreatorFactory implements Met
     @Override
     public Class<? extends DataValue> getDataValueClass() {
         return NominalDistributionValue.class;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<NominalDistributionValueMetaData> getMetaDataClass() {
+        return NominalDistributionValueMetaData.class;
     }
 
 }
