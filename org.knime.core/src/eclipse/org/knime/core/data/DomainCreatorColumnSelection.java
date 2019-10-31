@@ -77,16 +77,16 @@ public interface DomainCreatorColumnSelection {
      * Convenience factory method for simple {@link DomainCreatorColumnSelection} instances. Creates the
      * {@link DomainCreatorColumnSelection} by composing {@link Predicate createPredicate} and {@link Predicate
      * dropPredicate}.
-     *
-     * @param createDomainPredicate called by the returned object whenever its
-     *            {@link DomainCreatorColumnSelection#createDomain(DataColumnSpec)} method is called
      * @param dropDomainPredicate called by the returned object whenever its
      *            {@link DomainCreatorColumnSelection#dropDomain(DataColumnSpec)} method is called
+     * @param createDomainPredicate called by the returned object whenever its
+     *            {@link DomainCreatorColumnSelection#createDomain(DataColumnSpec)} method is called
+     *
      * @return a {@link DomainCreatorColumnSelection} whose behavior is specified by the provided predicates
      * @since 4.1
      */
-    static DomainCreatorColumnSelection create(final Predicate<DataColumnSpec> createDomainPredicate,
-        final Predicate<DataColumnSpec> dropDomainPredicate) {
+    static DomainCreatorColumnSelection create(final Predicate<DataColumnSpec> dropDomainPredicate,
+        final Predicate<DataColumnSpec> createDomainPredicate) {
         return new DomainCreatorColumnSelection() {
 
             @Override

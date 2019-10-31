@@ -91,13 +91,6 @@ final class MetaDataCalculators {
         void update(final DataCell cell);
 
         /**
-         * Merges the meta data contained in {@link MetaDataCalculator other} into this one.<br/>
-         *
-         * @param other the {@link MetaDataCalculator} to merge with this one
-         */
-        void merge(final MetaDataCalculator other);
-
-        /**
          * Creates a {@link List} of {@link MetaData} object corresponding to the information observed so far.<br/>
          * The returned {@link MetaData} must be independent of this {@link MetaDataCalculator} and subsequent calls to
          * {@link MetaDataCalculator#update(DataCell)} are allowed and must not change already created {@link MetaData}.
@@ -111,13 +104,13 @@ final class MetaDataCalculators {
      * Creates a {@link MetaDataCalculator} for {@link DataColumnSpec colSpec} and the provided options.
      *
      * @param colSpec the {@link DataColumnSpec} for which to create a {@link MetaDataCalculator}
-     * @param createMetaData whether new {@link MetaData} should be created from the data
      * @param dropMetaData whether the {@link MetaData} stored in {@link DataColumnSpec colSpec} should be dropped
+     * @param createMetaData whether new {@link MetaData} should be created from the data
      * @return a {@link MetaDataCalculator} for {@link DataColumnSpec colSpec} that behaves according to the provided
      *         options
      */
-    static MetaDataCalculator createCalculator(final DataColumnSpec colSpec, final boolean createMetaData,
-        final boolean dropMetaData) {
+    static MetaDataCalculator createCalculator(final DataColumnSpec colSpec, final boolean dropMetaData,
+        final boolean createMetaData) {
         if (dropMetaData && !createMetaData) {
             return NullMetaDataCalculator.INSTANCE;
         }
@@ -141,6 +134,16 @@ final class MetaDataCalculators {
         }
     }
 
+    static void merge(final MetaDataCalculator first, final MetaDataCalculator second) {
+        if (first == NullMetaDataCalculator.INSTANCE) {
+            assert second == NullMetaDataCalculator.INSTANCE;
+        } else {
+            assert first instanceof MetaDataCalculatorImpl;
+            assert second instanceof MetaDataCalculatorImpl;
+            ((MetaDataCalculatorImpl)first).merge((MetaDataCalculatorImpl)second);
+        }
+    }
+
     /**
      * A dummy implementation of {@link MetaDataCalculator} that doesn't actually do any computation. Note that
      * attempting to merge the singleton with any object other than itself will cause an assertion error since this
@@ -154,12 +157,6 @@ final class MetaDataCalculators {
         @Override
         public void update(final DataCell cell) {
             // do nothing
-        }
-
-        @Override
-        public void merge(final MetaDataCalculator other) {
-            assert other == this : "Attempting to merge NullMetaDataCalculator with anything but itself."
-                + "This indicates an implementation error.";
         }
 
         @Override
@@ -221,13 +218,6 @@ final class MetaDataCalculators {
         @Override
         public List<MetaData> createMetaData() {
             return m_metaDataCreators.stream().map(MetaDataCreator::create).collect(Collectors.toList());
-        }
-
-        @Override
-        public void merge(final MetaDataCalculator other) {
-            assert other instanceof MetaDataCalculatorImpl : "Attempting to merge a MetaDataCalculatorImpl object with "
-                + "a MetaDataCalculator of another type. This indicates an implementation error.";
-            merge((MetaDataCalculatorImpl)other);
         }
 
         @SuppressWarnings("unchecked")

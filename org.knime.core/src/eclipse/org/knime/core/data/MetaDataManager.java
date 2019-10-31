@@ -120,7 +120,16 @@ final class MetaDataManager {
      */
     @Override
     public boolean equals(final Object obj) {
-        return m_valueMetaDataMap.equals(obj);
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (obj instanceof MetaDataManager) {
+            return m_valueMetaDataMap.equals(((MetaDataManager)obj).m_valueMetaDataMap);
+        }
+        return false;
     }
 
     /**
@@ -157,7 +166,7 @@ final class MetaDataManager {
             return typedCreator;
         }
 
-        <T extends MetaData> void addMetaData(final T metaData, final boolean overwrite) {
+        <T extends MetaData> MetaDataManager.Creator addMetaData(final T metaData, final boolean overwrite) {
             final Class<T> metaDataClass = MetaDataRegistry.INSTANCE.getClass(metaData);
             if (overwrite) {
                 m_valueMetaDataMap.put(metaDataClass, MetaDataRegistry.INSTANCE.getCreator(metaData));
@@ -165,10 +174,22 @@ final class MetaDataManager {
                 final MetaDataCreator<T> creator = getCreator(metaDataClass);
                 creator.merge(metaData);
             }
+            return this;
         }
 
-        void merge(final MetaDataManager metaData) {
+        MetaDataManager.Creator remove(final Class<? extends MetaData> metaDataClass) {
+            m_valueMetaDataMap.remove(metaDataClass);
+            return this;
+        }
+
+        MetaDataManager.Creator clear() {
+            m_valueMetaDataMap.clear();
+            return this;
+        }
+
+        MetaDataManager.Creator merge(final MetaDataManager metaData) {
             metaData.m_valueMetaDataMap.values().forEach(this::merge);
+            return this;
         }
 
         private <M extends MetaData> void merge(final M metaData) {

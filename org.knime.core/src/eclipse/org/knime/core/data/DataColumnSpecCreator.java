@@ -189,7 +189,7 @@ public final class DataColumnSpecCreator {
     }
 
     /**
-     * Options for the {@link DataColumnSpecCreator#merge(DataColumnSpec, EnumSet)} method.
+     * Options for the {@link DataColumnSpecCreator#merge(DataColumnSpec, Set)} method.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      * @since 4.1
@@ -203,7 +203,7 @@ public final class DataColumnSpecCreator {
             ALLOW_VARYING_TYPES,
             /**
              * Allow the element names of the merged columns to differ. If this option is used, the element names of the
-             * second column are dropped (TODO discuss with Bernd/Mark if this is the correct behavior).
+             * second column are dropped.
              */
             ALLOW_VARYING_ELEMENT_NAMES;
     }
@@ -368,7 +368,6 @@ public final class DataColumnSpecCreator {
      *             names are not equal.
      */
     public void merge(final DataColumnSpec cspec2) {
-        // TODO discuss! Only called by DataTableSpec#mergeDataTableSpecs (at least in core and base)
         merge(cspec2, EnumSet.noneOf(MergeOptions.class));
     }
 
@@ -512,7 +511,24 @@ public final class DataColumnSpecCreator {
         m_metaDataCreator.addMetaData(metaData, overwrite);
     }
 
-    // TODO methods for removing individual and all meta data
+    /**
+     * Removes {@link MetaData} of class <b>metaDataClass</b>.
+     *
+     * @param metaDataClass the class of the {@link MetaData} that should be removed
+     * @since 4.1
+     */
+    public void removeMetaData(final Class<? extends MetaData> metaDataClass) {
+        m_metaDataCreator.remove(metaDataClass);
+    }
+
+    /**
+     * Drops all {@link MetaData} stored in the column creator.
+     *
+     * @since 4.1
+     */
+    public void removeAllMetaData() {
+        m_metaDataCreator.clear();
+    }
 
     /**
      * Returns the {@link DataType} of this {@link DataColumnSpecCreator}.

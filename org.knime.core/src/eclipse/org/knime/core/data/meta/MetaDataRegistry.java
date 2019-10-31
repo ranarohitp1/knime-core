@@ -132,12 +132,18 @@ public enum MetaDataRegistry {
         return clazz.asSubclass(MetaData.class);
     }
 
+    /**
+     * Retrieves the typed runtime class of a {@link MetaData} object.
+     *
+     * @param metaData the {@link MetaData} object whose runtime class is required
+     * @return the typed runtime class of {@link MetaData metaData}
+     */
     public <M extends MetaData> Class<M> getClass(final M metaData) {
         final String name = metaData.getClass().getName();
         final Class<? extends MetaData> wildcardClass = m_metaDataClasses.get(name);
         CheckUtils.checkState(wildcardClass != null,
             "The meta data class '%s' is not registered at the MetaDataType extension point.", name);
-        // m_metaDataClasses maps from class names to there class instance
+        // m_metaDataClasses maps from class names to their class instance
         @SuppressWarnings("unchecked")
         final Class<M> typedClass = (Class<M>)wildcardClass;
         return typedClass;
@@ -163,13 +169,26 @@ public enum MetaDataRegistry {
         }
     }
 
+    /**
+     * Returns a {@link MetaDataCreator} for the provided <b>metaDataClass</b>.
+     *
+     * @param metaDataClass the class of {@link MetaData} for which a creator is required
+     * @return a fresh {@link MetaDataCreator} for the provided <b>metaDataCreator</b>
+     */
     public <T extends MetaData> MetaDataCreator<T> getCreator(final Class<T> metaDataClass) {
         final MetaDataCreatorFactory<T> factory = retrieveTyped(m_creatorFactories, metaDataClass);
         return factory.create();
     }
 
-    private interface RefObj<T> {
-        Class<T> getRefClass();
+    /**
+     * Returns a {@link MetaDataCreator} initialized with {@link MetaData metaData}.
+     *
+     * @param metaData the {@link MetaData} to use as initialization for the creator
+     * @return a new {@link MetaDataCreator} initialized with the information from {@link MetaData metaData}
+     */
+    public <T extends MetaData> MetaDataCreator<T> getCreator(final T metaData) {
+        Class<T> metaDataClass = getClass(metaData);
+        return getCreator(metaDataClass).merge(metaData);
     }
 
     private static <M extends MetaData, F extends MetaDataFramework<M>> F retrieveTyped(
@@ -187,11 +206,6 @@ public enum MetaDataRegistry {
         @SuppressWarnings("unchecked")
         final F typedFrameworkObject = (F)frameworkObject;
         return typedFrameworkObject;
-    }
-
-    public <T extends MetaData> MetaDataCreator<T> getCreator(final T metaData) {
-        Class<T> metaDataClass = getClass(metaData);
-        return getCreator(metaDataClass).merge(metaData);
     }
 
     /**

@@ -48,7 +48,9 @@
  */
 package org.knime.core.data;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Optional;
@@ -56,8 +58,11 @@ import java.util.Optional;
 import org.junit.Test;
 import org.knime.core.data.meta.TestMetaData;
 import org.knime.core.data.meta.TestMetaData.TestMetaDataCreator;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.ModelContent;
 
 /**
+ * Unit tests for MetaDataManager and MetaDataManager.Creator.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
@@ -65,8 +70,11 @@ public class MetaDataManagerTest {
 
     private static final TestMetaData TEST_META_DATA = new TestMetaData("test");
 
+    /**
+     * Tests the creation of meta data managers.
+     */
     @Test
-    public void testCreation() throws Exception {
+    public void testCreation() {
         final MetaDataManager.Creator creator = new MetaDataManager.Creator();
         creator.addMetaData(TEST_META_DATA, false);
         final MetaDataManager mngr = creator.create();
@@ -75,8 +83,11 @@ public class MetaDataManagerTest {
         assertEquals(TEST_META_DATA, optionalMetaData.get());
     }
 
+    /**
+     * Tests overwriting meta data in the creator.
+     */
     @Test
-    public void testCreatorAddMetaDataOverwrite() throws Exception {
+    public void testCreatorAddMetaDataOverwrite() {
         final MetaDataManager.Creator creator = new MetaDataManager.Creator();
         creator.addMetaData(TEST_META_DATA, true);
         final TestMetaData overwritingMetaData = new TestMetaData("overwritten");
@@ -87,8 +98,11 @@ public class MetaDataManagerTest {
         assertEquals(overwritingMetaData, optionalMetaData.get());
     }
 
+    /**
+     * Tests merging meta data in the creator.
+     */
     @Test
-    public void testCreatorAddMetaDataMerge() throws Exception {
+    public void testCreatorAddMetaDataMerge() {
         final MetaDataManager.Creator creator = new MetaDataManager.Creator();
         creator.addMetaData(TEST_META_DATA, true);
         final TestMetaData newMetaData = new TestMetaData("overwritten");
@@ -98,5 +112,86 @@ public class MetaDataManagerTest {
         final Optional<TestMetaData> optionalMetaData = mngr.getMetaDataOfType(TestMetaData.class);
         assertTrue(optionalMetaData.isPresent());
         assertEquals(merged, optionalMetaData.get());
+    }
+
+    /**
+     * Tests the initialization of a creator with existing meta data.
+     */
+    @Test
+    public void testInitializedCreator() {
+        final MetaDataManager.Creator originCreator = new MetaDataManager.Creator();
+        originCreator.addMetaData(TEST_META_DATA, true);
+        MetaDataManager mdm = originCreator.create();
+        final MetaDataManager.Creator initializedCreator = new MetaDataManager.Creator(mdm);
+        MetaDataManager initialized = initializedCreator.create();
+        assertEquals(mdm, initialized);
+        initializedCreator.addMetaData(new TestMetaData("added"), true);
+        assertNotEquals(mdm, initializedCreator.create());
+    }
+
+    /**
+     * Tests the removal of particular meta data.
+     */
+    @Test
+    public void testCreatorRemove() {
+        final MetaDataManager.Creator creator = new MetaDataManager.Creator();
+        creator.addMetaData(TEST_META_DATA, true);
+        assertEquals(TEST_META_DATA, creator.create().getMetaDataOfType(TestMetaData.class).get());
+        creator.remove(TestMetaData.class);
+        assertEquals(MetaDataManager.EMPTY, creator.create());
+    }
+
+    /**
+     * Tests the removal of all meta data.
+     */
+    @Test
+    public void testCreatorClear() {
+        final MetaDataManager.Creator creator = new MetaDataManager.Creator();
+        creator.addMetaData(TEST_META_DATA, true);
+        assertEquals(TEST_META_DATA, creator.create().getMetaDataOfType(TestMetaData.class).get());
+        creator.clear();
+        assertEquals(MetaDataManager.EMPTY, creator.create());
+    }
+
+    /**
+     * Tests merging a MetaDataManager into an existing creator.
+     */
+    @Test
+    public void testCreatorMerge() {
+        final MetaDataManager.Creator creator = new MetaDataManager.Creator();
+        creator.addMetaData(TEST_META_DATA, true);
+        final MetaDataManager toMerge =
+            new MetaDataManager.Creator().addMetaData(new TestMetaData("Added"), true).create();
+        assertEquals(new TestMetaData("test", "Added"),
+            creator.merge(toMerge).create().getMetaDataOfType(TestMetaData.class).get());
+    }
+
+    /**
+     * Tests saving a meta data manager into a config.
+     *
+     * @throws InvalidSettingsException should not be thrown
+     */
+    @Test
+    public void testSave() throws InvalidSettingsException {
+        final MetaDataManager mgr = new MetaDataManager.Creator().addMetaData(TEST_META_DATA, true).create();
+        final ModelContent config = new ModelContent("test");
+        mgr.save(config);
+        assertTrue(config.containsKey(TestMetaData.class.getName()));
+        assertArrayEquals(new String[]{"test"}, config.getConfig(TestMetaData.class.getName())
+            .getStringArray(TestMetaData.TestMetaDataSerializer.CFG_TEST_SETTING));
+    }
+
+    /**
+     * Tests loading a meta data manager from a config.
+     *
+     * @throws InvalidSettingsException should not be thrown
+     */
+    @Test
+    public void testLoad() throws InvalidSettingsException {
+        final MetaDataManager mgr = new MetaDataManager.Creator().addMetaData(TEST_META_DATA, true).create();
+        final ModelContent config = new ModelContent("test");
+        mgr.save(config);
+        final MetaDataManager loaded = MetaDataManager.load(config);
+        assertEquals(mgr, loaded);
     }
 }

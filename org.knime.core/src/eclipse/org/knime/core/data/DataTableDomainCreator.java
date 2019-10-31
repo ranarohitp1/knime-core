@@ -193,7 +193,7 @@ public class DataTableDomainCreator {
             }
 
             m_metaDataCalculators[i] = MetaDataCalculators.createCalculator(colSpec,
-                metaDataColumnSelection.createDomain(colSpec), metaDataColumnSelection.dropDomain(colSpec));
+                metaDataColumnSelection.dropDomain(colSpec), metaDataColumnSelection.createDomain(colSpec));
             i++;
         }
     }
@@ -208,8 +208,9 @@ public class DataTableDomainCreator {
      */
     public DataTableDomainCreator(final DataTableSpec inputSpec, final boolean initDomain) {
         this(inputSpec,
-            DomainCreatorColumnSelection.create(c -> c.getType().isCompatible(NominalValue.class), c -> !initDomain),
-            DomainCreatorColumnSelection.create(c -> c.getType().isCompatible(BoundedValue.class), c -> !initDomain));
+            DomainCreatorColumnSelection.create(c -> !initDomain, c -> c.getType().isCompatible(NominalValue.class)),
+            DomainCreatorColumnSelection.create(c -> !initDomain, c -> c.getType().isCompatible(BoundedValue.class)),
+            DomainCreatorColumnSelection.create(c -> !initDomain, c -> true));
     }
 
     /**
@@ -360,7 +361,9 @@ public class DataTableDomainCreator {
 
             DataColumnSpecCreator specCreator = new DataColumnSpecCreator(original);
             specCreator.setDomain(domainCreator.createDomain());
-            m_metaDataCalculators[i].createMetaData().forEach(m -> specCreator.addMetaData(m, false));
+            // existing meta data is overwritten because the respective creator was initialized
+            // with the existing meta data if the provided configuration required it
+            m_metaDataCalculators[i].createMetaData().forEach(m -> specCreator.addMetaData(m, true));
             outColSpecs[i] = specCreator.createSpec();
         }
 
@@ -506,7 +509,7 @@ public class DataTableDomainCreator {
             if (!dataTableDomainCreator.m_maxsMissing[i] && otherMax != null) {
                 updateMax(i, m_maxs, otherMax, comparator);
             }
-            m_metaDataCalculators[i].merge(dataTableDomainCreator.m_metaDataCalculators[i]);
+            MetaDataCalculators.merge(m_metaDataCalculators[i], dataTableDomainCreator.m_metaDataCalculators[i]);
         }
     }
 

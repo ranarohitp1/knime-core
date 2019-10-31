@@ -49,6 +49,7 @@
 package org.knime.core.data.meta;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,10 +66,24 @@ import org.knime.core.node.config.ConfigWO;
  */
 public final class TestMetaData implements MetaData {
 
-    private final String m_metaData;
+    private final List<String> m_metaData;
 
-    public TestMetaData(final String metaData) {
-        m_metaData = metaData;
+    /**
+     * Creates a {@link TestMetaData} object that holds a copy of {@link List metaData}.
+     *
+     * @param metaData the meta data to encapsulate
+     */
+    public TestMetaData(final List<String> metaData) {
+        m_metaData = new ArrayList<>(metaData);
+    }
+
+    /**
+     * Creates a {@link TestMetaData} object that holds the provided <b>metaData</b>.
+     *
+     * @param metaData the meta data to encapsulate
+     */
+    public TestMetaData(final String ... metaData) {
+        m_metaData = Arrays.asList(metaData);
     }
 
     /**
@@ -89,20 +104,39 @@ public final class TestMetaData implements MetaData {
     }
 
     /**
-     *
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return m_metaData.hashCode();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return m_metaData.stream().collect(Collectors.joining(", "));
+    }
+
+    /**
+     * Serializer for {@link TestMetaData}.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public static final class TestMetaDataSerializer implements MetaDataSerializer<TestMetaData> {
 
-        private static final String CFG_TEST_SETTING = "test";
+        /**
+         * Config key used for the values of {@link TestMetaData} when serialized to a {@link ConfigWO}.
+         */
+        public static final String CFG_TEST_SETTING = "test";
 
         /**
          * {@inheritDoc}
          */
         @Override
         public void save(final TestMetaData metaData, final ConfigWO config) {
-            config.addString(CFG_TEST_SETTING, metaData.m_metaData);
+            config.addStringArray(CFG_TEST_SETTING, metaData.m_metaData.toArray(new String[0]));
         }
 
         /**
@@ -110,8 +144,8 @@ public final class TestMetaData implements MetaData {
          */
         @Override
         public TestMetaData load(final ConfigRO config) throws InvalidSettingsException {
-            final String testSetting = config.getString(CFG_TEST_SETTING);
-            return new TestMetaData(testSetting);
+            final String[] testSetting = config.getStringArray(CFG_TEST_SETTING);
+            return new TestMetaData(Arrays.asList(testSetting));
         }
 
         /**
@@ -156,7 +190,7 @@ public final class TestMetaData implements MetaData {
          */
         @Override
         public TestMetaData create() {
-            return new TestMetaData(m_metaData.stream().collect(Collectors.joining()));
+            return new TestMetaData(m_metaData);
         }
 
         /**
@@ -165,7 +199,7 @@ public final class TestMetaData implements MetaData {
         @Override
         public MetaDataCreator<TestMetaData> copy() {
             final TestMetaDataCreator copy = new TestMetaDataCreator();
-            copy.m_metaData = m_metaData;
+            copy.m_metaData = new ArrayList<>(m_metaData);
             return copy;
         }
 
@@ -174,7 +208,7 @@ public final class TestMetaData implements MetaData {
          */
         @Override
         public TestMetaDataCreator merge(final TestMetaData other) {
-            m_metaData.add(other.m_metaData);
+            m_metaData.addAll(other.m_metaData);
             return this;
         }
 

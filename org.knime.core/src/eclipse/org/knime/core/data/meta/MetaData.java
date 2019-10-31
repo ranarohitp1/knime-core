@@ -51,27 +51,12 @@ package org.knime.core.data.meta;
 import org.knime.core.data.DataValue;
 
 /**
- * TODO rewrite
- * This interface describes meta data that belongs to a certain type of {@link DataValue}.
- * {@link MetaData} objects are expected to be immutable (except for the load method).
+ * This interface describes meta data that typically belongs to a certain type of {@link DataValue}.
+ * {@link MetaData} objects are expected to be immutable.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @since 4.1
  */
 public interface MetaData {
-
-    /**
-     * Merges the contents of <b>this</b> and <b>other</b> to create a new(!) {@link MetaData} object.
-     * This method should not modify <b>this</b> or <b>other</b>.
-     *
-     * Note: Implementing classes must ensure that <b>other</b> has the correct value type i.e.
-     * <code>other.getValueType().equals(this.getValueType())</code>.
-     *
-     * @param other the {@link MetaData} to merge with
-     * @return a new {@link MetaData} object that contains the merged information of <b>this</b> and <b>other</b>
-     */
-//    MetaData merge(MetaData other);
-
-//    Class<? extends MetaData> getMetaDataClass();
-
+    // marker interface
 }
