@@ -33,4 +33,12 @@
             class="org.knime.core.util.TestWorkflowSaveHook">
       </WorkflowSaveHook>
    </extension>
+   <extension
+         point="org.knime.core.MetaDataType">
+      <MetaData
+            creatorFactory="org.knime.core.data.meta.TestMetaData$TestMetaDataCreatorFactory"
+            metaData="org.knime.core.data.meta.TestMetaData"
+            serializer="org.knime.core.data.meta.TestMetaData$TestMetaDataSerializer">
+      </MetaData>
+   </extension>
 </fragment>
