@@ -108,8 +108,8 @@ public final class DataTypeColumnFilter extends InputFilter<DataColumnSpec> {
     /**
      * @return the filterClasses
      */
-    Class<? extends DataValue>[] getFilterClasses() {
-        return m_filterClasses;
+    public Class<? extends DataValue>[] getFilterClasses() {
+        return m_filterClasses.clone();
     }
 
 }
