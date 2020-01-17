@@ -50,13 +50,11 @@ import java.util.Arrays;
 import java.util.Deque;
 
 import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.StringFormat;
-import org.knime.core.node.workflow.WorkflowPersistor.LoadResult;
 import org.knime.core.node.workflow.execresult.NodeContainerExecutionStatus;
 
 /** Runnable that represents the execution of a node. This abstract class
@@ -197,17 +195,7 @@ public abstract class NodeExecutionJob implements Runnable {
                 m_logger.debug(m_nc.getNameWithID() + " Start execute");
                 if (executeInactive) {
                     SingleNodeContainer snc = (SingleNodeContainer)m_nc;
-                    if (snc instanceof NativeNodeContainer || (snc instanceof SubNodeContainer
-                        && ((SubNodeContainer)snc).getWorkflowManager().isLocalWFM())) {
-                        //in case of a native node or a component with the default executor
-                        status = snc.performExecuteNode(getPortObjects());
-                    } else {
-                        // in case of a component with a custom executor:
-                        // just set all contained nodes to inactive and bypass the executor
-                        ExecutionMonitor exec = new ExecutionMonitor();
-                        LoadResult loadRes = new LoadResult("Inactive");
-                        status = ((SubNodeContainer)snc).setInactiveDeepExecute(exec, loadRes);
-                    }
+                    status = snc.performExecuteNode(getPortObjects());
                 } else {
                     status = mainExecute();
                 }

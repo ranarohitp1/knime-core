@@ -1203,25 +1203,19 @@ public final class SubNodeContainer extends SingleNodeContainer
      * @param loadRes load result to log error messages
      * @return the execution result
      */
-    NodeContainerExecutionStatus setInactiveDeepExecute(final ExecutionMonitor exec, final LoadResult loadRes) {
+    private NodeContainerExecutionStatus setInactiveDeepExecute(final ExecutionMonitor exec, final LoadResult loadRes) {
         return setInactiveDeep(this, null, exec, loadRes, true);
     }
 
-    private static NodeContainerExecutionStatus setInactiveDeep(final NodeContainer nc,
+    private NodeContainerExecutionStatus setInactiveDeep(final NodeContainer nc,
         final WorkflowExecutionResult wfmRes, final ExecutionMonitor exec, final LoadResult loadRes, final boolean doExecute) {
         NodeContainerExecutionResult res = null;
         if (nc instanceof NativeNodeContainer) {
             NativeNodeContainer nnc = (NativeNodeContainer)nc;
-            // doesn't actually execute/configure the node, i.e. won't touch the NodeModel's execute-method because the inports are all inactive
-            // it's the only way to set the node's outputs to inactive port objects
             if (!doExecute) {
-                nnc.performConfigure(createInactivePortObjectSpecs(nnc.getNrInPorts()), null,
-                    false /*has node effect*/);
+                pseudoConfigureNativeNode(nnc);
             } else {
-                nnc.performExecuteNode(createInactivePortObjects(nnc.getNrInPorts()));
-                NativeNodeContainerExecutionResult nativeRes = new NativeNodeContainerExecutionResult();
-                nativeRes.setNodeExecutionResult(nnc.getNode().createInactiveNodeExecutionResult());
-                res = nativeRes;
+                res = pseudoExecuteNativeNode(nnc);
             }
         } else if (nc instanceof WorkflowManager) {
             WorkflowExecutionResult wfmRes2 = doExecute ? new WorkflowExecutionResult(nc.getID()) : null;
@@ -1259,6 +1253,23 @@ public final class SubNodeContainer extends SingleNodeContainer
         } else {
             return null;
         }
+    }
+
+    private static void pseudoConfigureNativeNode(final NativeNodeContainer nnc) {
+        // doesn't actually configure the node, i.e. won't touch the NodeModel's configure-method because the inports are all inactive
+        // it's the only way to set the node's outputs to inactive port objects spec
+        nnc.performConfigure(createInactivePortObjectSpecs(nnc.getNrInPorts()), null, false /*has node effect*/);
+        nnc.setInternalState(InternalNodeContainerState.CONFIGURED);
+    }
+
+    private static NodeContainerExecutionResult pseudoExecuteNativeNode(final NativeNodeContainer nnc) {
+        // doesn't actually execute the node, i.e. won't touch the NodeModel's execute-method because the inports are all inactive
+        // it's the only way to set the node's outputs to inactive port objects and the node stati to 'executed'
+        nnc.performExecuteNode(createInactivePortObjects(nnc.getNrInPorts()));
+        nnc.setInternalState(EXECUTED, false);
+        NativeNodeContainerExecutionResult nativeRes = new NativeNodeContainerExecutionResult();
+        nativeRes.setNodeExecutionResult(nnc.getNode().createInactiveNodeExecutionResult());
+        return nativeRes;
     }
 
     private static PortObject[] createInactivePortObjects(final int count) {
